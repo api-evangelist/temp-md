@@ -1,0 +1,69 @@
+generated: '2026-09-19'
+method: searched
+source: https://temp.md/docs#lifecycle + https://temp.md/limits.json + https://temp.md/terms/ + openapi/_original/*.json + registry.npmjs.org (@tempmd/*)
+checked: '2026-09-19'
+versioning:
+  scheme: mixed
+  public_api: unversioned-path (https://api.temp.md/temps, /publish-sessions, /me/...); info.version 1.0.0
+  platform_api: path-versioned under /v1 ("Versioned partner API"); info.version 0.1.0; /v1/publish-sessions is a "versioned alias for the resumable publish protocol"
+  a2a: A2A-Version request header (const "1.0", default "1.0") on POST /a2a
+  mcp: MCP-Protocol-Version header accepted; server negotiated 2025-06-18 on initialize
+  notes: No API version pinning mechanism for the public API; no version identifier in responses.
+changelog:
+  url: null
+  artifact: changelog/temp-md-changelog.yml
+  notes: >-
+    No changelog page (https://temp.md/changelog returns the SPA shell) and no CHANGELOG in the public MCP repo
+    (404). The only dated release trail is the npm history of the @tempmd packages, recorded in the changelog
+    artifact. No ChangeLog pointer is emitted.
+status_page:
+  url: null
+  probed:
+  - {url: 'https://status.temp.md/', status: 404, checked: '2026-09-19'}
+  - {url: 'https://temp.md/status', status: 200, body: SPA shell, checked: '2026-09-19'}
+  - {url: 'https://api.temp.md/health', status: 200, body: '{"ok":true,"env":"production"}', checked: '2026-09-19'}
+  notes: No status page. A public health endpoint (getHealth) exists but is a liveness check, not incident history. No StatusPage pointer emitted.
+deprecation:
+  policy_documented: false
+  deprecated_operations: []
+  sunset_header: false
+  notes: >-
+    Neither spec marks any operation deprecated and no deprecation/sunset policy is published. No Deprecation
+    pointer emitted. Note that 410 Gone in this API means an EXPIRED Temp resource (object lifecycle), not a
+    retired endpoint.
+sla:
+  documented: false
+  terms_verbatim: 'temp.md is provided as-is. We do not guarantee uptime, and we may modify or discontinue the service at any time. Unclaimed files are temporary by design - do not rely on them for permanent storage.'
+  source: https://temp.md/terms/ (Availability; Last updated April 6, 2026)
+roadmap:
+  published: false
+terms:
+  url: https://temp.md/terms/
+  last_updated: '2026-04-06'
+  privacy_url: https://temp.md/privacy/
+  privacy_last_updated: '2026-04-06'
+resource_lifecycle:
+  note: >-
+    The provider's lifecycle story is about the hosted object (a Temp), and it is unusually well specified -
+    machine-readable in limits.json and mirrored in the TempStatus schema (LifecycleStatus enum drafting | active |
+    cooling | expired; fields expiresAt, coolingStartsAt, restoreUntil, restoreEligible).
+  states: [drafting, active, cooling, expired, (revoked), (removed by moderation)]
+  active_window: 7 days from the last publish or update (limits.json activeWindowSeconds 604800); every update resets it
+  cooling_window: 48 hours after the active window before expiry (coolingWindowSeconds 172800)
+  restore_grace: 7 days after expiry during which POST /temps/{tempId}/restore reactivates the same URL (restoreGraceSeconds 604800)
+  after_grace: deleted; a new Temp (new URL) is the only option
+  claimed: no expiry, no grace period - retained until the owner deletes it or closes the account (privacy policy)
+  publish_session_ttl: 3600 seconds (publishSessionTtlSeconds)
+  revocation: DELETE /temps/{tempId} is permanent - "Revocation invalidates the Temp's update and claim capabilities and deletes every stored Version. It cannot be restored." (docs#revoke)
+  snapshots: POST /temps/{tempId}/snapshot freezes the current Version at <slug>.temp.md/__v/<versionId>; the canonical URL keeps serving latest
+  failed_updates: >-
+    'A failed update never replaces the live version.' (llms.txt) - promotion is atomic at finalize
+  source: https://temp.md/docs#lifecycle
+release_cadence_observed:
+  source: registry.npmjs.org
+  packages:
+  - {name: '@tempmd/cli', created: '2026-08-26', latest: 0.4.2, published: '2026-08-27'}
+  - {name: '@tempmd/mcp', created: '2026-08-26', latest: 0.4.3, published: '2026-08-27'}
+  - {name: '@tempmd/client', created: '2026-08-26', latest: 0.2.0, published: '2026-09-06'}
+  - {name: '@tempmd/platform', created: '2026-08-26', latest: 0.2.0, published: '2026-09-06'}
+  note: Service launched publicly in 2026 (terms/privacy dated 2026-04-06, sitemap lastmod 2026-08-24, limits.json updatedAt 2026-08-23, pricing.json updatedAt 2026-07-24). Young, actively released.

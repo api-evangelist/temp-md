@@ -1,0 +1,89 @@
+generated: '2026-09-19'
+method: searched
+probe: true
+source: https://temp.md/privacy/ + https://temp.md/terms/ + https://temp.md/report + https://temp.md/docs#errors + openapi/temp-md-openapi.yml (reportAbuse)
+signals:
+  notice_and_action:
+    url: https://temp.md/report
+    api: https://api.temp.md/abuse-reports
+    categories: [Phishing or impersonation, Malware or harmful download, Spam, Copyright concern, Privacy or personal information, Other]
+    evidence:
+    - source: https://temp.md/report
+      http_status: 200
+      fetched: '2026-09-19'
+      quote: 'Report a Temp - Send us the published URL and the reason for your concern. Reports are rate-limited and reviewed by temp.md operations. [form: Published URL, Reason, Details, Contact email (optional)]'
+    - source: https://temp.md/docs#errors
+      http_status: 200
+      fetched: '2026-09-19'
+      quote: 'Use Report a Temp for phishing, malware, spam, copyright, privacy, or another safety concern. Suspended content is not served while it is reviewed.'
+    - source: https://temp.md/openapi.json
+      http_status: 200
+      fetched: '2026-09-19'
+      quote: 'POST /abuse-reports - reportAbuse - Report unsafe content (tags: Safety; 201/400/413/429; limit 10 reports/hour/IP)'
+    note: >-
+      A dedicated, anonymously reachable reporting page with a reason taxonomy, a documented review consequence
+      (suspended content is not served while reviewed; TempStatus.moderationState active | suspended | removed
+      is in the contract), AND a public API operation for the same report. This is the substance of a
+      notice-and-action mechanism for hosted third-party content, not a mention of the word. No statement of
+      decision timelines, statement-of-reasons or appeal is published, so it is recorded as the mechanism only.
+probed_absent:
+- signal: data_subject_request
+  urls:
+  - {url: 'https://temp.md/privacy/requests', status: 200, body: SPA shell}
+  - {url: 'https://temp.md/privacy/', status: 200}
+  note: >-
+    The privacy policy (Last updated April 6, 2026) names a contact (privacy@temp.md, Cloudflare-obfuscated in the
+    page) and states retention ("Unclaimed files are automatically deleted 7 days after the last publish or update,
+    plus a 7-day grace period. Claimed files are retained until the owner deletes them or closes their account")
+    but documents no rights, request process or response period - a contact address alone does not meet the bar.
+- signal: subprocessors
+  urls:
+  - {url: 'https://temp.md/legal/subprocessors', status: 200, body: SPA shell}
+  note: Privacy policy says only "We use infrastructure providers (hosting, database) who process data on our behalf under appropriate agreements" - no named vendors, no dated table. (Cloudflare fronts both hosts, observable from response headers, but the provider does not publish it.)
+- signal: incident_notification
+  urls:
+  - {url: 'https://temp.md/legal/dpa', status: 200, body: SPA shell}
+  note: No DPA, no breach-notification commitment.
+- signal: sbom
+  urls:
+  - {url: 'https://temp.md/security/sbom', status: 200, body: SPA shell}
+  - {url: 'https://temp.md/security', status: 200, body: SPA shell}
+  note: Never derived - search only. The open-source MCP server repo carries package.json but no SBOM.
+- signal: support_lifetime
+  urls:
+  - {url: 'https://temp.md/docs', status: 200}
+  note: No support period. Terms state the service "may modify or discontinue the service at any time".
+- signal: accessibility_conformance
+  urls:
+  - {url: 'https://temp.md/accessibility', status: 200, body: SPA shell}
+  - {url: 'https://temp.md/accessibility/vpat', status: 200, body: SPA shell}
+- signal: training_data_summary
+  urls:
+  - {url: 'https://temp.md/ai/transparency', status: 200, body: SPA shell}
+  note: Not an AI model provider; hosts AI-made output. Privacy policy states "We do not read, analyse, or share the contents of files you publish."
+- signal: ai_transparency
+  urls:
+  - {url: 'https://temp.md/ai/transparency', status: 200, body: SPA shell}
+  note: The product is marketed as hosting for AI-agent output, but no transparency statement about AI use in the service itself is published.
+- signal: global_privacy_control
+  urls:
+  - {url: 'https://temp.md/privacy/', status: 200}
+  note: No GPC statement. Privacy policy states a single session cookie and "We do not use tracking or analytics cookies." Not set from a header probe.
+- signal: data_residency
+  urls:
+  - {url: 'https://temp.md/docs/data-residency', status: 200, body: SPA shell}
+  note: No region statement; branded-domain and edge delivery documented but no residency commitment.
+- signal: age_assurance
+  urls:
+  - {url: 'https://temp.md/terms/', status: 200}
+  note: Terms carry no age requirement.
+- signal: transparency_report
+  urls:
+  - {url: 'https://temp.md/transparency', status: 200, body: SPA shell}
+- signal: exit_assistance
+  urls:
+  - {url: 'https://temp.md/docs', status: 200}
+  note: No export/portability feature documented; the CLI `recover` rebuilds project state but content export is not offered.
+spa_note: >-
+  temp.md's SPA catch-all returns HTTP 200 with the 196,623-byte home shell for every unknown path, so every
+  "200, body: SPA shell" above is a miss, judged by body, not status.

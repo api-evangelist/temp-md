@@ -1,0 +1,109 @@
+generated: '2026-09-19'
+method: derived
+source: >-
+  Derived by binding the LIVE tools/list of https://api.temp.md/mcp (8 tools, mcp/temp-md-mcp-tools.json) and the
+  three A2A skills in a2a/temp-md-agent-card.json to the operationIds of openapi/temp-md-openapi.yml (23
+  operations) - both fetched 2026-09-19. Nothing here is gated: the MCP schema, the agent card and the OpenAPI
+  are all public, so every binding is checked against real input schemas rather than by name alone.
+purpose: >-
+  temp.md exposes one publishing core through four surfaces - REST, remote/stdio MCP, A2A 1.0 and a CLI - that
+  overlap but are not identical. The MCP tools take inline file bundles (UTF-8/base64 JSON) where REST takes
+  multipart or a hashed publish-session manifest; the A2A skills wrap the same operations as data parts.
+surfaces:
+  rest_openapi: openapi/temp-md-openapi.yml            # 23 operations; verbatim source openapi/_original/temp-md-openapi.json
+  rest_platform_openapi: openapi/temp-md-platform-openapi.yml   # 27 partner-platform operations; no MCP tool touches them
+  mcp: https://api.temp.md/mcp                          # tools/list OPEN (anonymous); schemas in mcp/temp-md-mcp-tools.json
+  a2a: https://api.temp.md/a2a                          # JSON-RPC 1.0; SendMessage data-part operations publish|update|status
+  graphql: null
+crosswalk:
+- tool: publish_temp
+  category: publish
+  rest: [createTemp, createPublishSession, uploadPublishSessionFile, finalizePublishSession]
+  binding: rest
+  confidence: high
+  note: >-
+    Semantically createTemp (single request, anonymous, returns tempId/canonicalUrl/updateToken). The MCP tool takes
+    files[] inline as JSON (content + encoding utf8|base64) rather than multipart, and its idempotency_key maps to
+    the Idempotency-Key header that only the publish-session path accepts in REST - so the closest full-fidelity
+    REST equivalent for an idempotent publish is the three-step session flow.
+- tool: update_temp
+  category: publish
+  rest: [updateTemp, createPublishSession, uploadPublishSessionFile, finalizePublishSession]
+  binding: rest
+  confidence: high
+  note: PUT /temps/{tempId} with the scoped update token; the session path is the idempotent/resumable equivalent (tempId in the manifest).
+- tool: get_temp_status
+  category: lifecycle
+  rest: [getTempStatus]
+  binding: rest
+  confidence: high
+- tool: restore_temp
+  category: lifecycle
+  rest: [restoreTemp]
+  binding: rest
+  confidence: high
+- tool: snapshot_temp
+  category: lifecycle
+  rest: [snapshotTemp]
+  binding: rest
+  confidence: high
+  note: 'label maps to the optional JSON body {"label": ...}.'
+- tool: set_comments
+  category: settings
+  rest: [updateTempCapabilitySettings]
+  binding: rest
+  confidence: high
+  note: 'enabled maps to body {"commentsEnabled": bool}; the REST op also accepts spaMode, which the tool does not expose.'
+- tool: recover_update_token
+  category: accounts
+  rest: [rotateUpdateToken]
+  binding: rest
+  confidence: high
+  note: Remote-only tool; requires the connection's Bearer account API key, the same accountBearer scheme the REST op declares.
+mcp_only:
+- tool: list_temps
+  reason: >-
+    No operation in openapi.json lists an account's Temps (the dashboard's listing endpoint is not in the public
+    contract). On stdio the tool reads local .tempmd project records; on remote it needs an account API key.
+a2a_skills:
+- skill: publish-temp
+  operation_param: publish
+  rest: [createTemp]
+  mcp: publish_temp
+  confidence: high
+- skill: update-temp
+  operation_param: update
+  rest: [updateTemp]
+  mcp: update_temp
+  confidence: high
+- skill: inspect-temp
+  operation_param: status
+  rest: [getTempStatus]
+  mcp: get_temp_status
+  confidence: high
+rest_only:
+- capability: lifecycle
+  operations: [revokeTemp]
+  note: Permanent deletion has no MCP tool or A2A skill - the agent surfaces deliberately omit the one irreversible action.
+- capability: comments
+  operations: [listTempComments, appendTempComments]
+- capability: accounts
+  operations: [signup, login, listApiKeys, createApiKey, revokeApiKey]
+- capability: safety
+  operations: [reportAbuse]
+- capability: agents
+  operations: [getA2AAgentCard, sendA2AJsonRpc]
+- capability: health
+  operations: [getHealth]
+- capability: publish-sessions (resumable protocol, exposed directly)
+  operations: [getPublishSession]
+coverage:
+  mcp_tools: 8
+  mcp_tools_bound_to_rest: 7
+  mcp_only: 1
+  a2a_skills: 3
+  a2a_skills_bound_to_rest: 3
+  rest_operations_public_api: 23
+  rest_operations_with_a_tool_or_skill: 9
+  rest_operations_platform_api: 27
+  rest_operations_platform_with_a_tool: 0

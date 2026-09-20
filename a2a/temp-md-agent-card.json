@@ -1,0 +1,82 @@
+{
+  "name": "temp.md Publisher",
+  "description": "Publishes agent-made websites, apps, documents, and file bundles to stable public URLs, then updates those URLs in place.",
+  "supportedInterfaces": [
+    {
+      "url": "https://api.temp.md/a2a",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "provider": {
+    "url": "https://temp.md",
+    "organization": "temp.md"
+  },
+  "version": "1.0.0",
+  "documentationUrl": "https://temp.md/docs#a2a",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "extendedAgentCard": false
+  },
+  "securitySchemes": {
+    "bearer": {
+      "httpAuthSecurityScheme": {
+        "description": "Optional temp.md account API key or scoped Temp update token.",
+        "scheme": "Bearer",
+        "bearerFormat": "tempmd_key_… or scoped update token"
+      }
+    }
+  },
+  "defaultInputModes": [
+    "application/json",
+    "text/html",
+    "text/markdown",
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "application/json",
+    "text/html"
+  ],
+  "skills": [
+    {
+      "id": "publish-temp",
+      "name": "Publish a Temp",
+      "description": "Publish up to 20 inline UTF-8 or base64 files (10 MiB total) to a new stable public URL.",
+      "tags": ["publish", "website", "app", "artifact", "hosting"],
+      "examples": [
+        "Send a data part with {\"operation\":\"publish\",\"files\":[{\"path\":\"index.html\",\"content\":\"<h1>Hello</h1>\"}]}."
+      ],
+      "inputModes": [
+        "application/json",
+        "text/html",
+        "text/markdown",
+        "text/plain"
+      ],
+      "outputModes": ["application/json", "text/html"]
+    },
+    {
+      "id": "update-temp",
+      "name": "Update a Temp",
+      "description": "Atomically replace a Temp bundle while keeping its canonical URL unchanged.",
+      "tags": ["update", "deploy", "stable-url", "artifact"],
+      "examples": [
+        "Send a data part with {\"operation\":\"update\",\"temp_id\":\"…\",\"update_token\":\"…\",\"files\":[…]}."
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json", "text/html"]
+    },
+    {
+      "id": "inspect-temp",
+      "name": "Inspect a Temp",
+      "description": "Return lifecycle, expiry, ownership, moderation, and settings status for an accessible Temp.",
+      "tags": ["status", "lifecycle", "inspect"],
+      "examples": [
+        "Send a data part with {\"operation\":\"status\",\"temp_id\":\"…\",\"update_token\":\"…\"}."
+      ],
+      "inputModes": ["application/json"],
+      "outputModes": ["application/json"]
+    }
+  ],
+  "iconUrl": "https://temp.md/favicon.svg"
+}

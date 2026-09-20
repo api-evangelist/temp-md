@@ -1,0 +1,79 @@
+# temp.md
+
+> temp.md gives in-progress work one stable public link while it evolves. Publish an artifact (HTML, Markdown, CSV, or Mermaid), get a canonical URL like `slug.temp.md`, and push new versions behind the same URL — no re-sharing. No account or API key required to publish.
+
+Key semantics for agents:
+
+- A **Temp** is the shareable object; its canonical URL is the only link to give humans. Never share version-specific links.
+- Updating a Temp keeps the same URL and resets its 7-day active window. A failed update never replaces the live version.
+- Temps expire intentionally when inactive (48-hour cooling period first) and can be restored within 7 days of expiry.
+- Store publish records in a `.tempmd` file in the project root (`Temp ID: … | URL: … | Update Token: … | Expires: … | Claim Link: …`) and check it before publishing — update an existing Temp rather than creating a second link for the same work.
+
+## Integrations
+
+- [CLI](https://www.npmjs.com/package/@tempmd/cli): `npx @tempmd/cli push <file-or-directory>`, then `npx @tempmd/cli update` and `npx @tempmd/cli status`. Run `npx @tempmd/cli login` for account-owned publishing; manage named credentials with `npx @tempmd/cli keys`. If project state is lost, `npx @tempmd/cli recover <temp-id> <file-or-directory>` rotates the scoped update token and rebuilds `.tempmd.json` without changing the canonical URL. The installed executable is `tempmd`.
+- [MCP server](https://www.npmjs.com/package/@tempmd/mcp): `npx -y @tempmd/mcp` — tools: publish_temp, update_temp, get_temp_status, restore_temp, set_comments, list_temps
+- Remote MCP: Streamable HTTP at `https://api.temp.md/mcp` — accepts inline UTF-8 or base64 bundles up to 10 MiB and 20 files. Anonymous publishing works without authentication. Optionally send `Authorization: Bearer <tempmd_key_...>` on the MCP connection for account-owned publishing, account Temp listing, and update-token recovery. Use the stdio MCP or CLI when the agent needs local filesystem access or larger directory publishing.
+- [MCP Server Card](https://temp.md/.well-known/mcp.json): domain-level discovery metadata for the hosted Streamable HTTP endpoint
+- A2A 1.0: Agent Card at `https://temp.md/.well-known/agent-card.json`; JSON-RPC endpoint at `https://api.temp.md/a2a`. Skills: publish, update in place, and lifecycle inspection. `SendMessage` returns a completed Task for publishes/updates or a direct Message for status; `GetTask` projects durable Temp Version state, and `ListTasks` is available to account API keys. Anonymous publish needs no authentication; use the returned scoped update token as `Authorization: Bearer <token>` for later `GetTask` calls.
+- [Claude Code skill](https://temp.md/skill.md): install with `mkdir -p ~/.claude/skills/tempmd && curl -sSo ~/.claude/skills/tempmd/SKILL.md https://temp.md/skill.md`
+- [Agent manifest](https://temp.md/.well-known/agent.json): canonical machine discovery for REST, CLI, MCP, and A2A
+- [A2A Agent Card](https://temp.md/.well-known/agent-card.json): A2A 1.0 JSON-RPC interface and publishing skills
+- [OpenAPI 3.1](https://temp.md/openapi.json): public HTTP contract
+- [Platform OpenAPI 3.1](https://temp.md/platform-openapi.json): versioned contract for Organizations, Applications, server-only Application keys, delegated publish grants, Application-scoped Preview management, signed review, webhooks, usage, and branded domains
+- [Enforced limits](https://temp.md/limits.json) and [pricing](https://temp.md/pricing.json): machine-readable operating constraints and currently available plans
+
+## API (base: https://api.temp.md)
+
+- `POST /temps` — publish. multipart/form-data: `file` (main artifact; send an explicit MIME type — text/html, text/markdown, text/csv, text/x-mermaid — it drives rendering), optional `files/<path>` extras, optional `title`, optional `spaMode=true`. Returns `canonicalUrl`, `tempId`, `updateToken`, `claimLink`, `expiresAt`.
+- `PUT /temps/:id` — update in place. Same multipart body, header `Authorization: Bearer <updateToken>`. Same canonical URL, new version, lifecycle window resets.
+- `POST /publish-sessions` — start an idempotent, resumable manifest upload. Send `Idempotency-Key` and JSON `files[]` entries with `path`, `size`, `contentType`, and lowercase SHA-256 `hash`; include `tempId` when updating. Bearer authentication may be an account API key or the Temp's scoped update token. New Temps created with an account key are owned immediately.
+- `GET /publish-sessions/:id` — resume a session and retrieve current upload status/URLs. Bearer publish-session token.
+- `PUT /publish-sessions/:id/files/:fileId` — upload one file exactly as declared in the manifest. Bearer publish-session token.
+- `POST /publish-sessions/:id/finalize` — verify every object and atomically promote the Version. Bearer publish-session token; safe to retry.
+- Browser and Electron renderer integrations may call the capability-backed publish-session, Temp status, update, and revoke routes cross-origin without cookies. Send `X-Tempmd-Client: product/version` for sanitized product-level attribution only; never put user data or capabilities in that header.
+- The runtime-neutral `@tempmd/client` source lives in `packages/client` while its public package contract is stabilized. Host applications must protect the returned preview state because it contains update and short-lived upload authority.
+- The server-side `@tempmd/platform` source lives in `packages/platform`. Application keys use the `tempmd_app_...` prefix, are returned once, and must never reach a browser or Electron renderer. A backend should mint a 5–15 minute `tempmd_grant_...` publish grant for delegated uploads.
+- `POST /v1/organizations` and `POST /v1/organizations/:id/applications` — provision the multi-tenant control plane using a Temp.md account session.
+- `POST /v1/applications/:id/keys` — create an explicitly scoped, one-time-reveal Application credential.
+- `GET /v1/previews` and `GET|DELETE /v1/previews/:id` — list, inspect, or revoke only Previews belonging to the authenticated Application. Cross-Application IDs return a non-enumerating 404.
+- `POST /v1/previews/:id/review-requests` — freeze the current Version and mint a short-lived review capability.
+- `GET /v1/usage` — query exact publish/storage rollups for up to 90 days; edge view/egress fields are reserved for the analytics rollup.
+- Branded preview namespaces use a verified wildcard CNAME for routing and exact per-Preview certificate provisioning. Only active provisioned hostnames resolve.
+- `POST /v1/publish-grants` — mint a one-session create/update grant bound to optional opaque subject/project identifiers and enforced upload limits.
+- `POST /v1/publish-sessions` — versioned alias for the resumable publish protocol. Server requests may use an Application key; requests carrying an Origin header must use a publish grant.
+- `GET /temps/:id/status` — lifecycle check (active / cooling / expired, `expiresAt`, `restoreEligible`). Bearer update or claim token.
+- `POST /temps/:id/restore` — reactivate an expired Temp within its restore window. Bearer update/claim token or owning account credential.
+- `POST /temps/:id/snapshot` — freeze the current version as a fixed reference; returns `snapshotUrl` (`…temp.md/__v/<versionId>`). The canonical link stays latest-first. Bearer update token or owning account credential. Optional body `{"label": "…"}`.
+- `PATCH /temps/:id/settings` — body `{"commentsEnabled": true}` to enable pinned visitor comments and/or `{"spaMode": true}` to enable index fallback for client-side routes. Bearer update token or owning account credential.
+- `POST /me/temps/:id/claim` — claim ownership into an account (authenticated). **Claiming rotates the update token**: the response includes a new `updateToken` and the old one stops working — update the `.tempmd` record. Owners can password-protect a claimed Temp from the dashboard (`viewPassword` via `PATCH /me/temps/:id/settings`); visitors then need the password to view, publishing is unaffected.
+- `GET /me/api-keys` — list named account API keys with suffix, status, creation, and last-used metadata. Bearer account session or API key.
+- `POST /me/api-keys` — create a named API key. JSON body `{"name":"CI publisher"}`. The secret is returned once and stored only as a hash.
+- `DELETE /me/api-keys/:id` — revoke a key immediately. Revoked keys cannot authenticate subsequent requests.
+- `POST /me/temps/:id/update-token` — owner-authorized recovery. Atomically invalidates every prior scoped update token and returns one replacement exactly once. Bearer account session or API key.
+
+## Example
+
+```
+curl -X POST https://api.temp.md/temps -F "file=@./report.md;type=text/markdown"
+# → { "canonicalUrl": "https://amber-hill-9eb6.temp.md", "updateToken": "tempmd_…", … }
+
+curl -X PUT https://api.temp.md/temps/{tempId} -H "Authorization: Bearer tempmd_…" \
+  -F "file=@./report.md;type=text/markdown"
+# same URL, new version
+```
+
+## Enforced limits and errors
+
+- 10 MB per file, 50 MB per bundle, 100 files per bundle.
+- File paths must be safe relative paths; absolute paths, traversal, backslashes, duplicates, and temp.md-reserved paths are rejected.
+- 60 anonymous publishes/hour/IP, 120 updates/hour/Temp/IP, 30 comment writes/hour/Temp/IP, and 10 abuse reports/hour/IP.
+- Capability mutations are bounded: 20 restores, 20 owner update-token rotations, 60 snapshots, and 120 settings changes/hour/Temp/IP. Password unlock is limited to 20 attempts/15 minutes/Temp/IP.
+- Errors include stable `code`, `message`, `request_id`, and `docs_url` fields. Rate limits also return `retry_after` and the `Retry-After` header.
+- Public comment writes are validated and append-only. Visitors cannot overwrite or delete existing comments.
+- Report unsafe content at https://temp.md/report.
+
+## Docs
+
+- [Documentation](https://temp.md/docs): human-readable docs and dashboard
+- [Claim a Temp](https://temp.md/claim): attach an anonymous Temp to an account

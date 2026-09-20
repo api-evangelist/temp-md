@@ -1,0 +1,21 @@
+generated: '2026-09-19'
+method: probed
+source: live DNS/TLS/HTTP probes of apis.yml + OpenAPI hosts
+hosts:
+- host: temp.md
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Oct 31 07:01:29 2026 GMT
+  hsts: false
+- host: api.temp.md
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Oct 30 04:42:57 2026 GMT
+  hsts: null
+domains:
+- domain: temp.md
+  dnssec: false
+  caa: []
+  spf: true
+  dmarc: true
+  dmarc_policy: quarantine

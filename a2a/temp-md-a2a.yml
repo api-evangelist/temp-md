@@ -1,0 +1,93 @@
+generated: '2026-09-19'
+method: probed
+source: https://temp.md/.well-known/agent-card.json
+card:
+  file: a2a/temp-md-agent-card.json
+discovery:
+  path: /.well-known/agent-card.json
+  canonical: true
+  host: temp.md
+  also_served_on:
+  - host: api.temp.md
+    url: https://api.temp.md/.well-known/agent-card.json
+    http_status: 200
+    content_type: application/a2a+json
+    note: Byte-identical body; the API host serves it with the A2A media type and declares it in the OpenAPI as getA2AAgentCard.
+  note: >-
+    The card is served from the apex (temp.md, the provider's own registrable domain, provider.organization
+    "temp.md") AND from the API host it names as its interface (api.temp.md). The legacy /.well-known/agent.json
+    path on temp.md answers 200 with a DIFFERENT document - a provider-defined agent-discovery manifest, not an
+    A2A card - which is saved under well-known/temp-md-agent.json and not counted here. www.temp.md is a 404.
+    Ownership is not in question: the card describes the same product the OpenAPI, llms.txt and docs describe.
+x-evidence:
+  fetched: '2026-09-19'
+  url: https://temp.md/.well-known/agent-card.json
+  http_status: 200
+  content_type: application/json
+  body_parses_as: JSON object with AgentCard shape (name, description, supportedInterfaces, provider, version, capabilities, securitySchemes, defaultInputModes, defaultOutputModes, skills)
+  endpoint_probe:
+    url: https://api.temp.md/a2a
+    method: POST ListTasks (anonymous)
+    http_status: 200
+    body: '{"jsonrpc":"2.0","id":"1","error":{"code":-32603,"message":"Authentication required"}}'
+    note: The JSON-RPC endpoint is live and answers per-method; ListTasks needs an account API key, SendMessage publish is documented as anonymous. Not exercised further to avoid publishing content.
+agent_card:
+  name: temp.md Publisher
+  description: Publishes agent-made websites, apps, documents, and file bundles to stable public URLs, then updates those URLs in place.
+  url: https://api.temp.md/a2a
+  version: 1.0.0
+  protocol_version: '1.0'
+  protocol_binding: JSONRPC
+  provider:
+    organization: temp.md
+    url: https://temp.md
+  documentation_url: https://temp.md/docs#a2a
+  icon_url: https://temp.md/favicon.svg
+  capabilities:
+    streaming: false
+    push_notifications: false
+    extended_agent_card: false
+  security_schemes:
+    bearer: HTTP Bearer - optional temp.md account API key (tempmd_key_...) or scoped Temp update token
+  default_input_modes: [application/json, text/html, text/markdown, text/plain]
+  default_output_modes: [application/json, text/html]
+  skill_count: 3
+  skills:
+  - id: publish-temp
+    name: Publish a Temp
+    tags: [publish, website, app, artifact, hosting]
+  - id: update-temp
+    name: Update a Temp
+    tags: [update, deploy, stable-url, artifact]
+  - id: inspect-temp
+    name: Inspect a Temp
+    tags: [status, lifecycle, inspect]
+grade_basis: >-
+  Graded against A2A 1.0.0 hard checks: capabilities is an OBJECT (pass - {streaming, pushNotifications,
+  extendedAgentCard}); protocolVersion is present (pass - "1.0", carried at supportedInterfaces[0].protocolVersion,
+  which is where the released A2A 1.0.0 AgentCard puts it: 1.0.0 replaced the pre-release top-level url /
+  preferredTransport / protocolVersion / additionalInterfaces fields with a supportedInterfaces[] array of
+  AgentInterface {url, protocolBinding, protocolVersion}); skills is an ARRAY (pass - 3 skills, each with id, name,
+  description, tags, examples, inputModes, outputModes). defaultInputModes and defaultOutputModes are both
+  declared, so none of the optional-field gaps that separate near-conformant from conformant apply. The
+  declared interface is a callable JSON-RPC endpoint on the provider's API host (probed live, answers
+  per-method), not a documentation URL - the card is about the API, not about a docs site.
+deviations:
+- field: protocolVersion (top level)
+  observed: absent at the top level; present as supportedInterfaces[0].protocolVersion = "1.0"
+  note: >-
+    Recorded so a reader grading against the pre-1.0 field layout understands why the hard check passes: the
+    card uses the 1.0.0 shape, and a scorer looking only for a top-level protocolVersion would wrongly read it
+    as missing. This is the released layout, not a deviation from it.
+- field: capabilities.pushNotifications / streaming
+  observed: both false
+  note: Task completion must be polled via GetTask; no SSE streaming and no push notifications. Consistent with limits.json a2a.streaming=false.
+- field: securitySchemes.bearer.bearerFormat
+  observed: 'tempmd_key_... or scoped update token'
+  note: Free-text hint rather than a registered bearer format; harmless, but a client cannot machine-select the credential type from it.
+conformance:
+  spec: A2A 1.0.0
+  grade: conformant
+  protocol_version: '1.0'
+  preferred_transport: JSONRPC
+  deviations: []

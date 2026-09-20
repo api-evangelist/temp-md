@@ -1,0 +1,131 @@
+generated: '2026-09-19'
+method: searched
+format: provider-json
+source: >-
+  Derived from the 4xx responses declared in openapi/temp-md-openapi.yml (23 operations; components.responses
+  BadRequest/Unauthorized/Forbidden/NotFound/Conflict/Gone/TooLarge/RateLimited, all -> Error schema) and
+  openapi/temp-md-platform-openapi.yml (27 operations; one generic Error response), enriched from the docs error
+  reference https://temp.md/docs#errors, llms.txt "Enforced limits and errors", skill.md "Failure handling", and two
+  live unauthenticated responses observed 2026-09-19 (GET /temps/doesnotexist/status -> 401 unauthorized; POST
+  /publish-sessions without Idempotency-Key -> 400 invalid_idempotency_key).
+docs: https://temp.md/docs#errors
+rfc9457: false
+envelope:
+  media_type: application/json
+  shape: '{ "error": string, "code": string, "message": string, "request_id": string, "docs_url": uri, "retry_after": integer }'
+  required: [error]
+  note: >-
+    `error` is the short human summary (required), `code` the stable machine code, `message` the remediation-
+    oriented text, `request_id` a UUID that also appears in the X-Request-Id response header, `docs_url` always
+    https://temp.md/docs#errors in the observed responses, `retry_after` (seconds) only on 429. The platform
+    spec's Error schema requires error + code and omits docs_url/retry_after. additionalProperties: true.
+observed_live:
+- status: 401
+  code: unauthorized
+  error: Missing or invalid Authorization header
+  message: Missing or invalid Authorization header
+  request: GET https://api.temp.md/temps/doesnotexist/status (no credential)
+  headers: [x-request-id, access-control-expose-headers: X-Request-Id,Retry-After]
+- status: 400
+  code: invalid_idempotency_key
+  error: A valid Idempotency-Key header is required
+  message: Use a stable Idempotency-Key of at most 128 characters when creating or retrying a session.
+  request: POST https://api.temp.md/publish-sessions with body {}
+- status: 405
+  request: POST https://api.temp.md/mcp is the only method; GET /mcp -> 405
+- status: 404
+  request: 'unknown paths on api.temp.md -> {"error":"Not found"}-style JSON 404 (190 bytes)'
+documented_codes:
+- code: rate_limit_exceeded
+  status: 429
+  example_message: Anonymous publishing is limited to 60 Temps per hour per IP.
+  fields: retry_after (seconds) + Retry-After header
+  source: https://temp.md/docs#errors
+- code: unauthorized
+  status: 401
+  source: observed live
+- code: invalid_idempotency_key
+  status: 400
+  source: observed live
+problems:
+- status: 400
+  title: Invalid request
+  response: BadRequest
+  meaning: Malformed body, unsafe file path (absolute, traversal, backslash, duplicate or temp.md-reserved), missing Idempotency-Key on a publish session, bad settings body, or unsupported A2A content type (415 uses the same shape).
+  remediation: Fix the request per `message`; file paths must be safe relative paths; send a stable Idempotency-Key (<=128 chars) on POST /publish-sessions.
+  declared_on: [createTemp, createPublishSession, uploadPublishSessionFile, updateTempCapabilitySettings, appendTempComments, signup, login, createApiKey, reportAbuse, sendA2AJsonRpc(415)]
+- status: 401
+  title: Authentication required or invalid
+  response: Unauthorized
+  meaning: Missing or invalid Bearer credential (scoped update token, publish-session token, or account session/API key).
+  remediation: Send Authorization Bearer with the token the operation's securityScheme names; after a claim the old update token is rotated - fetch the new one from the claim page or dashboard.
+  declared_on: [updateTemp, revokeTemp, createPublishSession, login, listApiKeys, createApiKey, revokeApiKey, rotateUpdateToken]
+- status: 403
+  title: Credential lacks access
+  response: Forbidden
+  meaning: The token is valid but not for this Temp/session (e.g. an update token that was rotated by a claim, a publish-session token used on another session, a password-protected or restricted Temp).
+  remediation: >-
+    Skill.md - "403 on update after the user claimed the Temp: the token was rotated - ask the user for the new one."
+  declared_on: [updateTemp, revokeTemp, createPublishSession, getPublishSession, uploadPublishSessionFile, getTempStatus, restoreTemp, snapshotTemp, updateTempCapabilitySettings, listTempComments, appendTempComments, rotateUpdateToken]
+- status: 404
+  title: Resource not found
+  response: NotFound
+  meaning: Unknown tempId / sessionId / keyId. The platform API returns a non-enumerating 404 for Previews that belong to another Application.
+  remediation: Check the id from the .tempmd project record; do not treat a 404 as expiry (that is 410).
+  declared_on: [updateTemp, revokeTemp, getPublishSession, getTempStatus, restoreTemp, snapshotTemp, listTempComments, appendTempComments, revokeApiKey, rotateUpdateToken]
+- status: 409
+  title: Request conflicts with current state
+  response: Conflict
+  meaning: Idempotency-Key reused with a different manifest, an upload for a file already finalized, a finalize on an incomplete session, a duplicate signup email, or a duplicate API key name.
+  remediation: Resume the existing session (GET /publish-sessions/{sessionId}) instead of re-creating it; use a new Idempotency-Key for a genuinely new bundle.
+  declared_on: [createPublishSession, uploadPublishSessionFile, finalizePublishSession, signup, createApiKey]
+- status: 410
+  title: Resource expired or recovery window closed
+  response: Gone
+  meaning: The Temp has expired (lifecycle `expired`) or the 7-day restore grace has passed; a publish session's one-hour TTL has lapsed.
+  remediation: >-
+    Skill.md - "410 on update: the Temp expired - restore it first (POST /temps/{tempId}/restore), then update."
+    If restoreTemp itself returns 410 the window is closed; publish a new Temp.
+  declared_on: [updateTemp, uploadPublishSessionFile, finalizePublishSession, restoreTemp]
+- status: 413
+  title: Request or bundle exceeds an enforced limit
+  response: TooLarge
+  meaning: Over 10 MB per file, 50 MB per bundle, 100 files, 120-char title, 128 KB session manifest, 16 MiB A2A/MCP request or 10 MiB inline bundle (see limits.json).
+  remediation: Split or shrink the bundle; use publish sessions or the stdio MCP / CLI for large directories.
+  declared_on: [createTemp, createPublishSession, uploadPublishSessionFile, appendTempComments, reportAbuse, sendA2AJsonRpc]
+- status: 415
+  title: Unsupported media type (A2A)
+  response: BadRequest
+  meaning: The A2A endpoint accepts application/json or application/a2a+json only.
+  declared_on: [sendA2AJsonRpc]
+- status: 422
+  title: Bundle verification failed
+  response: (inline)
+  meaning: finalizePublishSession found a declared file missing or its bytes not matching the manifest size/hash.
+  remediation: Re-upload the mismatched file(s) with PUT /publish-sessions/{sessionId}/files/{fileId}, then finalize again (finalize is safe to retry).
+  declared_on: [finalizePublishSession]
+- status: 429
+  title: Rate limit exceeded
+  response: RateLimited
+  headers: [Retry-After]
+  body_extra: retry_after (seconds)
+  meaning: One of the 15 published per-IP / per-Temp / per-account limits was hit (rate-limits/temp-md-rate-limits.yml).
+  remediation: >-
+    Skill.md - "read retry_after or the Retry-After header, wait, and retry. Do not immediately loop."
+  declared_on: [createTemp, revokeTemp, createPublishSession, restoreTemp, snapshotTemp, appendTempComments, signup, login, createApiKey, rotateUpdateToken, reportAbuse]
+- status: 502
+  title: Upstream verification failed (platform)
+  meaning: verifyDomainBinding could not complete DNS/certificate verification.
+  declared_on: [verifyDomainBinding]
+- status: 503
+  title: Branded domains unavailable (platform)
+  declared_on: [createDomainBinding]
+a2a_errors:
+  transport: JSON-RPC 2.0 error object
+  observed:
+  - code: -32602
+    message: Invalid method parameters.
+    data: '[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"INVALID_PARAMS","domain":"a2a-protocol.org"}]'
+  - code: -32603
+    message: Authentication required
+    note: Returned to an anonymous ListTasks; account API key required.

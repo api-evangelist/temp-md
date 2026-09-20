@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "updatedAt": "2026-08-23",
+  "units": {
+    "storage": "bytes",
+    "rateWindow": "seconds"
+  },
+  "publishing": {
+    "maxFileBytes": 10485760,
+    "maxBundleBytes": 52428800,
+    "maxMultipartRequestBytes": 57671680,
+    "maxFilesPerBundle": 100,
+    "maxFilePathCharacters": 512,
+    "maxFilePathDepth": 20,
+    "maxTitleCharacters": 120,
+    "maxPublishSessionManifestBytes": 131072,
+    "publishSessionTtlSeconds": 3600,
+    "sha256RequiredForSessions": true
+  },
+  "remoteMcp": {
+    "transport": "streamable-http",
+    "endpoint": "https://api.temp.md/mcp",
+    "maxRequestBytes": 16777216,
+    "maxInlineBundleBytes": 10485760,
+    "maxInlineFiles": 20,
+    "contentEncodings": ["utf8", "base64"]
+  },
+  "a2a": {
+    "protocolVersion": "1.0",
+    "protocolBinding": "JSONRPC",
+    "endpoint": "https://api.temp.md/a2a",
+    "maxRequestBytes": 16777216,
+    "maxInlineBundleBytes": 10485760,
+    "maxInlineFiles": 20,
+    "contentEncodings": ["utf8", "base64"],
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "comments": {
+    "maxRequestBytes": 262144,
+    "maxCommentsPerSave": 200,
+    "maxCommentBytes": 16384,
+    "maxCommentIdCharacters": 128,
+    "writeMode": "append_only"
+  },
+  "accounts": {
+    "maxAuthRequestBytes": 16384,
+    "maxApiKeyRequestBytes": 16384,
+    "maxApiKeyNameCharacters": 64,
+    "maxActiveApiKeys": 20
+  },
+  "lifecycle": {
+    "activeWindowSeconds": 604800,
+    "coolingWindowSeconds": 172800,
+    "restoreGraceSeconds": 604800
+  },
+  "rateLimits": [
+    { "action": "anonymous_multipart_publish", "limit": 60, "windowSeconds": 3600, "scope": "ip" },
+    { "action": "anonymous_publish_session", "limit": 60, "windowSeconds": 3600, "scope": "ip" },
+    { "action": "account_publish_session", "limit": 120, "windowSeconds": 3600, "scope": "account" },
+    { "action": "update", "limit": 120, "windowSeconds": 3600, "scope": "temp_and_ip" },
+    { "action": "restore", "limit": 20, "windowSeconds": 3600, "scope": "temp_and_ip" },
+    { "action": "snapshot", "limit": 60, "windowSeconds": 3600, "scope": "temp_and_ip" },
+    { "action": "temp_settings", "limit": 120, "windowSeconds": 3600, "scope": "temp_and_ip" },
+    { "action": "temp_revoke", "limit": 20, "windowSeconds": 3600, "scope": "temp_and_ip" },
+    { "action": "comment", "limit": 30, "windowSeconds": 3600, "scope": "temp_and_ip" },
+    { "action": "abuse_report", "limit": 10, "windowSeconds": 3600, "scope": "ip" },
+    { "action": "signup", "limit": 10, "windowSeconds": 3600, "scope": "ip" },
+    { "action": "login", "limit": 30, "windowSeconds": 3600, "scope": "ip" },
+    { "action": "claim", "limit": 30, "windowSeconds": 3600, "scope": "account_and_ip" },
+    { "action": "api_key_create", "limit": 60, "windowSeconds": 3600, "scope": "account" },
+    { "action": "update_token_rotate", "limit": 20, "windowSeconds": 3600, "scope": "account_and_temp" }
+  ]
+}

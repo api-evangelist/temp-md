@@ -1,0 +1,43 @@
+generated: '2026-09-19'
+method: probed
+source: https://temp.md/changelog (probed) + https://github.com/tempmd/tempmd-mcp (no CHANGELOG.md) + registry.npmjs.org/@tempmd/* time metadata
+checked: '2026-09-19'
+summary: >-
+  temp.md publishes no changelog. /changelog on temp.md returns the SPA home shell (HTTP 200, 196,623 bytes,
+  same as every unknown path), the sitemap lists no changelog or blog URL, and the public MCP repo has no
+  CHANGELOG.md (raw.githubusercontent 404). The only dated, provider-published change trail is the npm release
+  history of the @tempmd packages, recorded below as observed data. No ChangeLog pointer is emitted because the
+  provider ships nothing a reader can follow.
+scheme:
+  api_versioning: unversioned public API; /v1 platform API (info.version 0.1.0)
+  note: openapi.json declares info.version 1.0.0; platform-openapi.json 0.1.0; limits.json updatedAt 2026-08-23; pricing.json updatedAt 2026-07-24.
+current_version:
+  public_api_spec: 1.0.0
+  platform_api_spec: 0.1.0
+  mcp_server: 1.0.0 (remote serverInfo) / 0.4.3 (npm @tempmd/mcp)
+  cli: 0.4.2
+feeds:
+  rss: null
+  atom: null
+  json: null
+  probed:
+  - {url: 'https://temp.md/changelog', status: 200, body: SPA shell}
+  - {url: 'https://raw.githubusercontent.com/tempmd/tempmd-mcp/main/CHANGELOG.md', status: 404}
+  - {url: 'https://temp.md/sitemap.xml', status: 200, note: 15 URLs, no changelog/blog}
+entries: []
+entries_note: Deliberately empty - no provider-authored entries exist to capture.
+observed_releases:
+  source: registry.npmjs.org (time field)
+  note: Registry facts, not release notes; content of each release is not described anywhere public except the MCP repo's commit history.
+  releases:
+  - {package: '@tempmd/client', version: 0.2.0, date: '2026-09-06'}
+  - {package: '@tempmd/platform', version: 0.2.0, date: '2026-09-06'}
+  - {package: '@tempmd/mcp', version: 0.4.3, date: '2026-08-27'}
+  - {package: tempmd-mcp, version: 0.4.3, date: '2026-08-27'}
+  - {package: '@tempmd/cli', version: 0.4.2, date: '2026-08-27'}
+  - {package: '@tempmd/mcp', version: 0.4.0, date: '2026-08-26', note: first publish (npm created)}
+  - {package: '@tempmd/cli', version: 0.4.0, date: '2026-08-26', note: first publish}
+  - {package: '@tempmd/client', version: 0.1.0, date: '2026-08-26', note: first publish}
+  - {package: '@tempmd/platform', version: 0.1.0, date: '2026-08-26', note: first publish}
+  - {package: yank-note-extension-tempmd, version: 0.1.0, date: '2026-08-26'}
+  - {registry: official MCP registry, name: io.github.tempmd/mcp, version: 0.4.2, date: '2026-08-27', note: first listing; 0.4.3 is current}

@@ -1,0 +1,603 @@
+# Faithful YAML rendering of https://temp.md/platform-openapi.json (fetched 2026-09-19, verbatim copy in openapi/_original/temp-md-platform-openapi.json). No content added or removed.
+openapi: 3.1.0
+info:
+  title: Temp.md Embedded Preview Platform API
+  version: 0.1.0
+  description: Versioned partner API for creating and governing previews on behalf of opaque end customers. Application keys
+    are server credentials; browser publishers must use short-lived publish grants.
+servers:
+- url: https://api.temp.md
+paths:
+  /v1/organizations:
+    post:
+      operationId: createOrganization
+      summary: Create an Organization
+      security:
+      - dashboardBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - slug
+              properties:
+                name:
+                  type: string
+                  maxLength: 80
+                slug:
+                  type: string
+                  maxLength: 48
+                  pattern: ^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$
+      responses:
+        '201':
+          description: Organization created
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /v1/organizations/{organizationId}:
+    get:
+      operationId: getOrganization
+      summary: Get an Organization and its Applications
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '200':
+          description: Organization and Applications
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/organizations/{organizationId}/applications:
+    post:
+      operationId: createApplication
+      summary: Create a partner Application
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/OrganizationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                  maxLength: 80
+                environment:
+                  enum:
+                  - production
+                  - staging
+                  - development
+      responses:
+        '201':
+          description: Application created
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}:
+    get:
+      operationId: getApplication
+      summary: Get an Application
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Application
+        '404':
+          $ref: '#/components/responses/Error'
+    patch:
+      operationId: updateApplication
+      summary: Update an Application
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Updated Application
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}/keys:
+    get:
+      operationId: listApplicationKeys
+      summary: List redacted Application keys
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Application keys without raw secrets
+        '404':
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createApplicationKey
+      summary: Create a one-time-reveal Application key
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '201':
+          description: Application key and one-time raw token
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}/keys/{keyId}:
+    delete:
+      operationId: revokeApplicationKey
+      summary: Revoke an Application key immediately
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      - name: keyId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Key revoked
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/previews:
+    get:
+      operationId: listPlatformPreviews
+      summary: List Previews belonging to the authenticated Application
+      security:
+      - applicationBearer: []
+      parameters:
+      - name: external_project_id
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      responses:
+        '200':
+          description: Application-scoped Preview list
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+  /v1/previews/{previewId}:
+    get:
+      operationId: getPlatformPreview
+      summary: Get one Application-scoped Preview and its Versions
+      security:
+      - applicationBearer: []
+      parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '200':
+          description: Preview and Version history
+        '404':
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: revokePlatformPreview
+      summary: Revoke a Preview and delete its artifacts
+      security:
+      - applicationBearer: []
+      parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '200':
+          description: Preview revoked
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/publish-grants:
+    post:
+      operationId: createPublishGrant
+      summary: Mint one short-lived delegated browser publish grant
+      description: Application keys are server-only. Return the grant, not the Application key, to a browser or Electron renderer.
+      security:
+      - applicationBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePublishGrant'
+      responses:
+        '201':
+          description: One-time publish grant
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/publish-grants/{grantId}:
+    delete:
+      operationId: revokePublishGrant
+      summary: Revoke a delegated publish grant
+      security:
+      - applicationBearer: []
+      parameters:
+      - name: grantId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Grant revoked
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/publish-sessions:
+    post:
+      operationId: createPlatformPublishSession
+      summary: Create or update a Preview through the resumable protocol
+      description: Server requests may use an Application key. Requests with an Origin header must use a publish grant. Upload
+        and finalize URLs returned by this operation use a narrower upload capability.
+      security:
+      - applicationBearer: []
+      - publishGrantBearer: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      responses:
+        '201':
+          description: Publish session and scoped upload targets
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}/webhooks:
+    get:
+      operationId: listWebhookEndpoints
+      summary: List webhook endpoints
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Webhook endpoints without signing secrets
+        '404':
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createWebhookEndpoint
+      summary: Create a signed webhook endpoint
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '201':
+          description: Endpoint and one-time signing secret
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}/webhooks/{endpointId}:
+    delete:
+      operationId: disableWebhookEndpoint
+      summary: Disable a webhook endpoint
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      - name: endpointId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Endpoint disabled
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}/webhook-deliveries:
+    get:
+      operationId: listWebhookDeliveries
+      summary: Inspect recent webhook delivery attempts
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Recent webhook deliveries
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}/domains:
+    get:
+      operationId: listDomainBindings
+      summary: List branded preview namespaces
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Domain bindings and DNS instructions
+        '404':
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createDomainBinding
+      summary: Register a branded preview namespace
+      description: Returns wildcard CNAME and ownership TXT records. Preview certificates are provisioned individually after
+        verification.
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - hostnameSuffix
+              properties:
+                hostnameSuffix:
+                  type: string
+                  example: preview.example.com
+      responses:
+        '201':
+          description: Pending domain binding and DNS records
+        '400':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}/domains/{domainId}/verify:
+    post:
+      operationId: verifyDomainBinding
+      summary: Verify wildcard CNAME and ownership TXT records
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      - name: domainId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Current DNS verification state
+        '404':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+  /v1/applications/{applicationId}/domains/{domainId}:
+    delete:
+      operationId: disableDomainBinding
+      summary: Disable a branded namespace and deprovision hostnames
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      - name: domainId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Domain binding disabled
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/previews/{previewId}/review-requests:
+    get:
+      operationId: listReviewRequests
+      summary: List review requests for a Preview
+      security:
+      - applicationBearer: []
+      parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '200':
+          description: Version-bound review requests
+        '404':
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createReviewRequest
+      summary: Freeze the current Version for signed review
+      security:
+      - applicationBearer: []
+      parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '201':
+          description: Review request and one-time viewer token
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/review-requests/{reviewRequestId}:
+    get:
+      operationId: getReviewRequest
+      summary: Open a signed review request
+      security:
+      - reviewBearer: []
+      parameters:
+      - name: reviewRequestId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Frozen review request and decisions
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/review-requests/{reviewRequestId}/decisions:
+    post:
+      operationId: createReviewDecision
+      summary: Approve or request changes on a frozen Version
+      security:
+      - reviewBearer: []
+      parameters:
+      - name: reviewRequestId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: Append-only review decision
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+  /v1/usage:
+    get:
+      operationId: getPlatformUsage
+      summary: Get Application usage rollups
+      description: Publish and storage counters are exact. View and egress fields are reserved for the edge analytics rollup.
+      security:
+      - applicationBearer: []
+      parameters:
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Daily and total usage counters
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    dashboardBearer:
+      type: http
+      scheme: bearer
+      description: A Temp.md dashboard session or personal account API key.
+    applicationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_app_<id>_<secret>
+      description: Server-only Application key with explicit scopes.
+    publishGrantBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_grant_<id>_<secret>
+      description: Short-lived, one-session delegated publishing authority.
+    reviewBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_view_<id>_<secret>
+      description: Short-lived viewer capability bound to one frozen review request.
+  parameters:
+    OrganizationId:
+      name: organizationId
+      in: path
+      required: true
+      schema:
+        type: string
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      schema:
+        type: string
+    PreviewId:
+      name: previewId
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    CreatePublishGrant:
+      type: object
+      required:
+      - operation
+      properties:
+        operation:
+          enum:
+          - create
+          - update
+        previewId:
+          type: string
+        externalSubjectId:
+          type: string
+          maxLength: 200
+        externalProjectId:
+          type: string
+          maxLength: 200
+        ttlSeconds:
+          type: integer
+          minimum: 60
+          maximum: 900
+        maxFiles:
+          type: integer
+          minimum: 1
+          maximum: 100
+        maxFileBytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        maxTotalBytes:
+          type: integer
+          minimum: 1
+          maximum: 52428800
+    Error:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

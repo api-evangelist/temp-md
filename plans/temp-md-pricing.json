@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "updatedAt": "2026-07-24",
+  "currency": "USD",
+  "plans": [
+    {
+      "id": "free",
+      "name": "Free",
+      "availability": "public",
+      "price": {
+        "amount": 0,
+        "interval": null
+      },
+      "accountRequiredToPublish": false,
+      "features": [
+        "anonymous publishing",
+        "stable canonical URLs",
+        "in-place updates",
+        "resumable directory uploads",
+        "claims and account API keys",
+        "comments",
+        "snapshots",
+        "restore grace period"
+      ],
+      "limits": "https://temp.md/limits.json"
+    }
+  ],
+  "paidPlans": [],
+  "note": "No paid plan is currently offered."
+}

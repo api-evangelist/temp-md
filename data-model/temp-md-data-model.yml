@@ -1,0 +1,73 @@
+generated: '2026-09-19'
+method: derived
+source: >-
+  Derived from openapi/temp-md-openapi.yml (17 schemas, 23 operations) and openapi/temp-md-platform-openapi.yml
+  (2 schemas, 27 operations - most platform resources are described only by path structure and response
+  descriptions, so their fields are not enumerated here), plus the object reference in https://temp.md/docs#response
+  and the lifecycle section.
+docs: https://temp.md/docs#response
+notation: >-
+  Relationships are has_one / has_many / belongs_to with the referencing field in `via`. Ids are opaque strings
+  (tempId, versionId, sessionId, fileId, keyId, userId); the docs show tempId/updateToken as 16-char examples.
+  Capability tokens (updateToken, claimToken, uploadToken) are credentials bound to one object rather than ids.
+identifiers:
+  tempId: string - the Temp; used in every /temps/{tempId} path and in the .tempmd project record
+  versionId: string - one immutable bundle; addressable at <slug>.temp.md/__v/<versionId>
+  sessionId: string - a publish session (1h TTL)
+  fileId: string - one declared file inside a session manifest
+  keyId: string - an account API key; ApiKey.id
+  canonicalUrl: uri - https://<slug>.temp.md (the shareable identity of a Temp)
+  token_prefixes: {account_api_key: tempmd_key_, application_key: tempmd_app_<id>_<secret>, publish_grant: tempmd_grant_<id>_<secret>, review_viewer: tempmd_view_<id>_<secret>}
+entities:
+- {name: Temp, schema: TempStatus, domain: core, description: 'The shareable object: one canonical URL, a lifecycle (drafting|active|cooling|expired), ownership (anonymous|claimed), privacy (unlisted|password_protected), moderation (active|suspended|removed), title, spaMode, commentsEnabled, expiresAt/coolingStartsAt/restoreUntil/restoreEligible.'}
+- {name: Version, schema: UpdateTempResult / FinalizeResult (versionId), domain: core, description: 'One immutable published bundle of a Temp; the canonical URL serves the latest, a snapshot pins one.'}
+- {name: Snapshot, schema: (snapshotTemp response - snapshotUrl), domain: core, description: 'A labelled frozen Version with its own URL <slug>.temp.md/__v/<versionId>.'}
+- {name: CreateTempResult, schema: CreateTempResult, domain: core, description: 'Publish response: tempId, canonicalUrl, updateToken, claimToken, claimLink, expiresAt, hint.'}
+- {name: PublishSession, schema: PublishSession, domain: publish, description: 'Resumable idempotent upload: sessionId, tempId, versionId, operation, status, uploadToken, uploads[], skipped[], finalizeUrl, statusUrl, expiresAt.'}
+- {name: PublishSessionFile, schema: PublishSessionFile, domain: publish, description: 'One declared file: fileId, path, size, contentType, hash (sha256), status, method, url, headers - i.e. a presigned upload slot.'}
+- {name: UploadManifestFile, schema: UploadManifestFile, domain: publish, description: 'Client-declared file (path, size, contentType, hash) in CreatePublishSessionInput.files[].'}
+- {name: FinalizeResult, schema: FinalizeResult, domain: publish, description: 'Promotion result (success, sessionId, tempId, versionId, canonicalUrl, status, expiresAt, ownershipState, updateToken?, claimToken?, claimLink?).'}
+- {name: RevokeTempResult, schema: RevokeTempResult, domain: lifecycle, description: 'ok, tempId, canonicalUrl, status, artifactsDeleted, cleanupPending, message.'}
+- {name: Comment, schema: (listTempComments items - additionalProperties), domain: comments, description: 'Pinned visitor comment (Pindrop.js); append-only for the public; owners can remove from the dashboard.'}
+- {name: Account, schema: LoginResult (userId, email, token), domain: accounts, description: 'Optional account that claims Temps and holds API keys; created by signup.'}
+- {name: ApiKey, schema: ApiKey, domain: accounts, description: 'Named account key: id, name, suffix, status, createdAt, lastUsedAt, revokedAt, current. Secret returned once.'}
+- {name: AbuseReport, schema: (reportAbuse body), domain: safety, description: 'Report of unsafe content against a published URL; drives moderationState.'}
+- {name: A2A Task / Message, schema: JsonRpcRequest / JsonRpcResponse, domain: agents, description: 'A2A 1.0 SendMessage returns a Task (publish/update) or a Message (status); "Temp versions are the durable task record" (agent.json).'}
+- {name: Organization, schema: (platform, not enumerated), domain: platform, description: 'Tenant root created from a dashboard session; holds Applications.'}
+- {name: Application, schema: (platform), domain: platform, description: 'A partner product that publishes Previews; owns keys, webhooks, domains, publish grants, usage.'}
+- {name: ApplicationKey, schema: (platform), domain: platform, description: 'Server-only tempmd_app_ credential with explicit scopes, one-time reveal, revocable.'}
+- {name: PublishGrant, schema: CreatePublishGrant, domain: platform, description: 'Short-lived delegated browser publish authority: operation, previewId, externalSubjectId, externalProjectId, ttlSeconds, maxFiles, maxFileBytes, maxTotalBytes.'}
+- {name: Preview, schema: (platform), domain: platform, description: 'The platform-scoped Temp - belongs to an Application, tagged with opaque externalSubjectId / externalProjectId, has Versions.'}
+- {name: ReviewRequest, schema: (platform), domain: platform, description: 'A frozen Version plus a short-lived tempmd_view_ capability for signed review.'}
+- {name: ReviewDecision, schema: (platform), domain: platform, description: 'Append-only approve / request-changes decision on a ReviewRequest.'}
+- {name: WebhookEndpoint, schema: (platform), domain: platform, description: 'Signed webhook destination for an Application; one-time signing secret at creation.'}
+- {name: WebhookDelivery, schema: (platform), domain: platform, description: 'A delivery attempt record (inspectable via listWebhookDeliveries).'}
+- {name: DomainBinding, schema: (platform), domain: platform, description: 'Branded preview namespace (wildcard CNAME + ownership TXT verification, per-Preview certificates).'}
+- {name: UsageRollup, schema: (platform), domain: platform, description: 'Daily and total publish/storage counters per Application (getPlatformUsage from/to); view/egress reserved.'}
+- {name: Error, schema: Error, domain: cross-cutting, description: 'error, code, message, request_id, docs_url, retry_after.'}
+relationships:
+- {from: Temp, to: Version, kind: has_many, via: 'versionId (UpdateTempResult / FinalizeResult)'}
+- {from: Temp, to: Snapshot, kind: has_many, via: 'snapshotTemp -> snapshotUrl'}
+- {from: Snapshot, to: Version, kind: has_one, via: 'versionId'}
+- {from: Temp, to: Comment, kind: has_many, via: '/temps/{tempId}/comments'}
+- {from: Temp, to: PublishSession, kind: has_many, via: 'PublishSession.tempId (null while creating)'}
+- {from: PublishSession, to: PublishSessionFile, kind: has_many, via: 'uploads[] / skipped[]'}
+- {from: PublishSession, to: Version, kind: has_one, via: 'versionId (promoted at finalize)'}
+- {from: Temp, to: Account, kind: belongs_to, via: 'ownershipState=claimed (claim link / claimToken)'}
+- {from: Account, to: Temp, kind: has_many, via: 'claim; MCP list_temps'}
+- {from: Account, to: ApiKey, kind: has_many, via: '/me/api-keys'}
+- {from: Temp, to: AbuseReport, kind: has_many, via: 'reportAbuse (published URL)'}
+- {from: AbuseReport, to: Temp, kind: affects, via: 'moderationState'}
+- {from: Organization, to: Application, kind: has_many, via: '/v1/organizations/{organizationId}/applications'}
+- {from: Application, to: ApplicationKey, kind: has_many, via: '/v1/applications/{applicationId}/keys'}
+- {from: Application, to: WebhookEndpoint, kind: has_many, via: '/v1/applications/{applicationId}/webhooks'}
+- {from: WebhookEndpoint, to: WebhookDelivery, kind: has_many, via: '/v1/applications/{applicationId}/webhook-deliveries'}
+- {from: Application, to: DomainBinding, kind: has_many, via: '/v1/applications/{applicationId}/domains'}
+- {from: Application, to: Preview, kind: has_many, via: 'applicationBearer scope on /v1/previews'}
+- {from: Application, to: PublishGrant, kind: has_many, via: '/v1/publish-grants'}
+- {from: PublishGrant, to: Preview, kind: belongs_to, via: 'previewId (update grants)'}
+- {from: Preview, to: Version, kind: has_many, via: 'getPlatformPreview "and its Versions"'}
+- {from: Preview, to: ReviewRequest, kind: has_many, via: '/v1/previews/{previewId}/review-requests'}
+- {from: ReviewRequest, to: ReviewDecision, kind: has_many, via: '/v1/review-requests/{reviewRequestId}/decisions'}
+- {from: Application, to: UsageRollup, kind: has_many, via: '/v1/usage'}
+render: null

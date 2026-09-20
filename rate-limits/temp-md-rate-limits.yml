@@ -1,0 +1,47 @@
+generated: '2026-09-19'
+method: probed
+source: https://temp.md/limits.json (schemaVersion 1.0, updatedAt 2026-08-23; saved verbatim to rate-limits/temp-md-limits.json) + https://temp.md/docs#limits + https://temp.md/docs#errors + openapi/temp-md-openapi.yml RateLimited response + live response headers from api.temp.md (2026-09-19)
+docs: https://temp.md/docs#limits
+machine_readable: https://temp.md/limits.json
+summary: >-
+  Fifteen named rate limits, each with a limit, window and scope, are published as JSON and mirrored in the docs
+  table. Exhaustion returns 429 with the JSON envelope's retry_after (seconds) and an HTTP Retry-After header.
+  There are no quota headers on successful responses.
+confidence: high
+limit_count: 15
+status_on_exhaustion: 429
+headers:
+- name: Retry-After
+  meaning: Seconds to wait before retrying; declared on the RateLimited response in openapi.json and exposed via Access-Control-Expose-Headers on every api.temp.md response (observed).
+- name: X-Request-Id
+  meaning: Correlation id on every response (observed), repeated as request_id in the error body.
+body_fields:
+  retry_after: integer seconds (Error.retry_after)
+  code: rate_limit_exceeded
+  example: '{"error":"Publish rate limit exceeded","code":"rate_limit_exceeded","message":"Anonymous publishing is limited to 60 Temps per hour per IP.","retry_after":1200,"request_id":"...","docs_url":"https://temp.md/docs#errors"}'
+quota_headers_on_success: none (GET /health returned only x-request-id / CORS headers; no X-RateLimit-* or RateLimit-*)
+scopes:
+- {action: anonymous_multipart_publish, scope: per-ip, window: 3600s, limit: 60, unit: publishes, operations: [createTemp]}
+- {action: anonymous_publish_session, scope: per-ip, window: 3600s, limit: 60, unit: sessions, operations: [createPublishSession (anonymous)]}
+- {action: account_publish_session, scope: per-account, window: 3600s, limit: 120, unit: sessions, operations: [createPublishSession (accountBearer)]}
+- {action: update, scope: per-temp-and-ip, window: 3600s, limit: 120, unit: updates, operations: [updateTemp, createPublishSession (tempId)]}
+- {action: restore, scope: per-temp-and-ip, window: 3600s, limit: 20, unit: restores, operations: [restoreTemp]}
+- {action: snapshot, scope: per-temp-and-ip, window: 3600s, limit: 60, unit: snapshots, operations: [snapshotTemp]}
+- {action: temp_settings, scope: per-temp-and-ip, window: 3600s, limit: 120, unit: changes, operations: [updateTempCapabilitySettings]}
+- {action: temp_revoke, scope: per-temp-and-ip, window: 3600s, limit: 20, unit: revocations, operations: [revokeTemp]}
+- {action: comment, scope: per-temp-and-ip, window: 3600s, limit: 30, unit: comment writes, operations: [appendTempComments]}
+- {action: abuse_report, scope: per-ip, window: 3600s, limit: 10, unit: reports, operations: [reportAbuse]}
+- {action: signup, scope: per-ip, window: 3600s, limit: 10, unit: signups, operations: [signup]}
+- {action: login, scope: per-ip, window: 3600s, limit: 30, unit: logins, operations: [login]}
+- {action: claim, scope: per-account-and-ip, window: 3600s, limit: 30, unit: claims, operations: ['claim (dashboard / POST /me/temps/{id}/claim per llms.txt; not in openapi.json)']}
+- {action: api_key_create, scope: per-account, window: 3600s, limit: 60, unit: keys, operations: [createApiKey]}
+- {action: update_token_rotate, scope: per-account-and-temp, window: 3600s, limit: 20, unit: rotations, operations: [rotateUpdateToken]}
+other_documented_limits:
+- {name: password unlock attempts, limit: 20, window: 15 minutes, scope: per-temp-and-ip, source: https://temp.md/docs#limits}
+size_limits:
+  publishing: {maxFileBytes: 10485760, maxBundleBytes: 52428800, maxMultipartRequestBytes: 57671680, maxFilesPerBundle: 100, maxFilePathCharacters: 512, maxFilePathDepth: 20, maxTitleCharacters: 120, maxPublishSessionManifestBytes: 131072, publishSessionTtlSeconds: 3600}
+  remoteMcp: {maxRequestBytes: 16777216, maxInlineBundleBytes: 10485760, maxInlineFiles: 20}
+  a2a: {maxRequestBytes: 16777216, maxInlineBundleBytes: 10485760, maxInlineFiles: 20}
+  comments: {maxRequestBytes: 262144, maxCommentsPerSave: 200, maxCommentBytes: 16384}
+  accounts: {maxAuthRequestBytes: 16384, maxApiKeyRequestBytes: 16384, maxApiKeyNameCharacters: 64, maxActiveApiKeys: 20}
+status_on_size_exceeded: 413

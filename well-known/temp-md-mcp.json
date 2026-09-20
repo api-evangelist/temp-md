@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/mcp-server-card/v1.json",
+  "version": "1.0",
+  "protocolVersion": "2025-11-25",
+  "serverInfo": {
+    "name": "tempmd-remote",
+    "title": "temp.md",
+    "version": "1.0.0"
+  },
+  "description": "Publish agent-made websites, apps, documents, and file bundles to stable public URLs, then update those URLs in place.",
+  "iconUrl": "https://temp.md/favicon.svg",
+  "documentationUrl": "https://temp.md/docs#mcp",
+  "transport": {
+    "type": "streamable-http",
+    "endpoint": "https://api.temp.md/mcp"
+  },
+  "capabilities": {
+    "tools": {
+      "listChanged": true
+    }
+  },
+  "authentication": {
+    "required": false,
+    "schemes": [
+      "bearer"
+    ]
+  },
+  "instructions": "Anonymous publishing requires no credential. Optionally send a temp.md account API key as a Bearer token for account-owned publishing and account tools. Use update_temp when an artifact already has a Temp so its public URL stays unchanged.",
+  "tools": [
+    "dynamic"
+  ]
+}

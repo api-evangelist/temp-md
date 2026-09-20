@@ -1,0 +1,43 @@
+generated: '2026-09-19'
+method: searched
+source: https://temp.md/docs#agents (CLI section) + https://temp.md/llms.txt + https://temp.md/.well-known/agent.json + registry.npmjs.org/@tempmd/cli
+description: >-
+  First-party CLI for publishing a file or a recursively discovered directory to one stable temp.md URL. It
+  applies ignore rules, hashes the exact bundle, resumes interrupted publish sessions, skips unchanged files, and
+  keeps a .tempmd.json project record so later runs update the same link. The package itself is catalogued in
+  packages/temp-md-packages.yml.
+docs: https://temp.md/docs#agents
+package: '@tempmd/cli'
+registry: https://www.npmjs.com/package/@tempmd/cli
+version: 0.4.2
+published: '2026-08-27'
+license: MIT
+executable: tempmd
+repo: https://github.com/tempmd/tempmd (packages/cli-alias; repository is not public - GitHub API 404)
+install:
+  npx: npx @tempmd/cli <command>
+  npx_pinned: npx -y @tempmd/cli
+  npm_global: npm install -g @tempmd/cli   # then `tempmd <command>`
+commands:
+  publish:
+  - {name: push <file-or-directory>, description: Publish a file or directory; creates the Temp and writes .tempmd.json. Directories go through the resumable publish-session protocol with per-file SHA-256.}
+  - {name: update, description: Push the current file/directory again to the SAME canonical URL using the stored update token; unchanged files are skipped by hash.}
+  - {name: status, description: Print the Temp's lifecycle (active / cooling / expired), expiresAt and restoreEligible.}
+  account:
+  - {name: login, description: Sign in once so publishes land in your account with a named API key (tempmd_key_...).}
+  - {name: keys, description: List named account API keys (suffix, status, created, last used).}
+  - {name: keys revoke <key-id>, description: Revoke an API key immediately.}
+  recovery:
+  - {name: recover <temp-id> <file-or-directory>, description: Rotate the scoped update token via the owner-authorized recovery route and rebuild .tempmd.json without changing the canonical URL.}
+key_flows:
+- name: Publish a build and keep updating the same link
+  steps: ['npx @tempmd/cli push ./dist', 'npx @tempmd/cli update', 'npx @tempmd/cli status']
+- name: Account-owned publishing
+  steps: ['npx @tempmd/cli login', 'npx @tempmd/cli keys', 'npx @tempmd/cli push ./dist']
+- name: Lost project state
+  steps: ['npx @tempmd/cli recover <temp-id> ./dist']
+project_state:
+  file: .tempmd.json (CLI) / .tempmd (agent skill line format)
+  schema: https://temp.md/schemas/project-state-v1.json
+backing_operations: [createPublishSession, uploadPublishSessionFile, finalizePublishSession, getTempStatus, login, listApiKeys, createApiKey, revokeApiKey, rotateUpdateToken]
+limits: Full 50 MiB / 100-file bundle (unlike the remote MCP's 10 MiB / 20 inline files).

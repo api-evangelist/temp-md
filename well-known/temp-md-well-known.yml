@@ -1,0 +1,98 @@
+generated: '2026-09-19'
+method: probed
+source: live probes of /.well-known/ on temp.md, api.temp.md and www.temp.md (2026-09-19)
+summary: >-
+  Three real documents are served on the apex, one of them also on the API host: the A2A 1.0 agent card
+  (/.well-known/agent-card.json, on BOTH temp.md and api.temp.md, byte-identical), an MCP Server Card
+  (/.well-known/mcp.json, validating against the modelcontextprotocol.io server-card schema) and a provider-
+  defined agent-discovery manifest (/.well-known/agent.json - NOT an A2A card; a temp.md schema that links REST,
+  CLI, MCP and A2A surfaces). Nothing RFC 9116 / OAuth / OIDC / api-catalog is served anywhere. The WellKnown
+  pointer is earned by the agent card and the MCP server card; no SecurityTxt pointer (no security.txt on any host).
+false_positive_watch: >-
+  temp.md is an SPA whose catch-all answers HTTP 200 with the 196,623-byte home shell (text/html) for EVERY
+  unknown path, including /.well-known/security.txt, /openid-configuration, /oauth-authorization-server,
+  /oauth-protected-resource, /api-catalog, /ai-plugin.json and /apis.json. Those 200s are recorded below as
+  misses, not hits. api.temp.md answers a real JSON 404 ({"error":"Not found"}) for unknown paths, so its
+  statuses can be trusted as-is.
+pointer_basis: >-
+  WellKnown emitted on the strength of agent-card.json (200, application/json on temp.md; 200,
+  application/a2a+json on api.temp.md) and mcp.json (200, application/json). SecurityTxt NOT emitted.
+hosts:
+- host: https://temp.md
+  documents:
+  - path: /.well-known/agent-card.json
+    status: 200
+    type: application/json
+    file: ../a2a/temp-md-agent-card.json
+    note: A2A 1.0 agent card, saved verbatim under a2a/ and graded in a2a/temp-md-a2a.yml.
+  - path: /.well-known/mcp.json
+    status: 200
+    type: application/json
+    file: temp-md-mcp.json
+    note: MCP Server Card ($schema static.modelcontextprotocol.io/schemas/mcp-server-card/v1.json) naming the streamable-http endpoint https://api.temp.md/mcp.
+  - path: /.well-known/agent.json
+    status: 200
+    type: application/json
+    file: temp-md-agent.json
+    note: >-
+      Provider-defined agent-discovery manifest ($schema https://temp.md/schemas/agent-discovery-v1.json), not an
+      A2A card - it links the OpenAPI, CLI, stdio + remote MCP, limits.json, pricing.json, llms.txt and the A2A
+      card. Saved because it is a real, useful document; it does not by itself count as a legacy-path A2A hit.
+  - path: /.well-known/security.txt
+    status: 200
+    type: text/html
+    note: SPA shell (196,623 bytes, identical to the home page); not a security.txt; treated as a miss.
+  - path: /.well-known/openid-configuration
+    status: 200
+    type: text/html
+    note: SPA shell; not an OIDC discovery document; miss.
+  - path: /.well-known/oauth-authorization-server
+    status: 200
+    type: text/html
+    note: SPA shell; miss.
+  - path: /.well-known/oauth-protected-resource
+    status: 200
+    type: text/html
+    note: SPA shell; miss.
+  - path: /.well-known/api-catalog
+    status: 200
+    type: text/html
+    note: SPA shell; not an RFC 9727 api-catalog; miss.
+  - path: /.well-known/ai-plugin.json
+    status: 200
+    type: text/html
+    note: SPA shell; miss.
+  - path: /.well-known/apis.json
+    status: 200
+    type: text/html
+    note: SPA shell; miss. /apis.json likewise.
+- host: https://api.temp.md
+  documents:
+  - path: /.well-known/agent-card.json
+    status: 200
+    type: application/a2a+json
+    file: ../a2a/temp-md-agent-card.json
+    note: Byte-identical to the apex card (diff empty); served with the A2A media type. Declared in the OpenAPI as operationId getA2AAgentCard.
+  - path: /.well-known/agent.json
+    status: 404
+  - path: /.well-known/security.txt
+    status: 404
+  - path: /.well-known/openid-configuration
+    status: 404
+  - path: /.well-known/oauth-authorization-server
+    status: 404
+  - path: /.well-known/oauth-protected-resource
+    status: 404
+    note: >-
+      The hosted MCP server at api.temp.md/mcp accepts anonymous tools/list and tools/call, so RFC 9728
+      protected-resource metadata is not expected; the optional Bearer credential is a provider-issued API key
+      (tempmd_key_...), not an OAuth token.
+  - path: /.well-known/api-catalog
+    status: 404
+  - path: /.well-known/ai-plugin.json
+    status: 404
+- host: https://www.temp.md
+  documents:
+  - path: /
+    status: 404
+    note: www host resolves (Cloudflare) but serves a 404 page; no documents probed further.

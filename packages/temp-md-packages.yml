@@ -1,0 +1,123 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  registry.npmjs.org metadata for the @tempmd scope (fetched 2026-09-19), the provider's own llms.txt
+  (https://temp.md/llms.txt), agent manifest (https://temp.md/.well-known/agent.json), docs
+  (https://temp.md/docs#agents) and the github.com/tempmd organization. PyPI (pypi.org/pypi/tempmd/json -> 404)
+  and the other registries hold nothing first-party.
+summary:
+  first_party_sdk_count: 4
+  first_party_package_count: 6
+  note: >-
+    Every first-party package is on npm under the @tempmd scope and points at homepage temp.md; the monorepo they
+    cite (github.com/tempmd/tempmd) returns 404 from the GitHub API, so the CLI/client/platform source is not
+    public — only the MCP server (github.com/tempmd/tempmd-mcp) and the editor plugins are. All releases are
+    recent (2026-08-26 to 2026-09-06), later than the OpenAPI they wrap, so there is no abandonment signal here.
+github_organization:
+  found: true
+  url: https://github.com/tempmd
+  checked: '2026-09-19'
+  note: >-
+    14 public repos; the first-party ones are tempmd-mcp, grapesjs-plugin-tempmd, yank-note-extension-tempmd and
+    acode-plugin-tempmd. The remainder (dyad, screenshot-to-code, VvvebJs, llamacoder, gb-studio, html-anything,
+    micracode ...) are forks of third-party builders, presumably for integration work, and are not temp.md packages.
+packages:
+- language: javascript
+  registry: npm
+  name: '@tempmd/cli'
+  url: https://www.npmjs.com/package/@tempmd/cli
+  install: npx -y @tempmd/cli
+  executable: tempmd
+  official: true
+  kind: cli
+  version: 0.4.2
+  published: '2026-08-27'
+  first_published: '2026-08-26'
+  license: MIT
+  repository: https://github.com/tempmd/tempmd (packages/cli-alias; repo not public)
+  description: Official CLI for publishing files and directories to one stable temp.md URL
+  note: Command surface catalogued in cli/temp-md-cli.yml.
+- language: javascript
+  registry: npm
+  name: '@tempmd/mcp'
+  url: https://www.npmjs.com/package/@tempmd/mcp
+  install: npx -y @tempmd/mcp
+  executable: tempmd-mcp
+  official: true
+  kind: mcp-server
+  version: 0.4.3
+  published: '2026-08-27'
+  first_published: '2026-08-26'
+  license: MIT
+  repository: https://github.com/tempmd/tempmd-mcp
+  description: MCP server for temp.md - publish agent-made artifacts to one stable link that updates in place
+  note: Local stdio MCP server; the same implementation is hosted at https://api.temp.md/mcp (see mcp/temp-md-mcp.yml).
+- language: javascript
+  registry: npm
+  name: tempmd-mcp
+  url: https://www.npmjs.com/package/tempmd-mcp
+  install: npx -y tempmd-mcp
+  official: true
+  kind: mcp-server
+  version: 0.4.3
+  published: '2026-08-27'
+  license: MIT
+  repository: https://github.com/tempmd/tempmd-mcp
+  description: Compatibility alias of @tempmd/mcp ("remains available as a compatibility package with the same implementation and version" - README).
+- language: javascript
+  registry: npm
+  name: '@tempmd/client'
+  url: https://www.npmjs.com/package/@tempmd/client
+  install: npm install @tempmd/client
+  official: true
+  kind: sdk
+  runtime: browser, Electron renderer, any Fetch + Web Crypto runtime (no Node built-ins)
+  version: 0.2.0
+  published: '2026-09-06'
+  first_published: '2026-08-26'
+  license: MIT
+  repository: https://github.com/tempmd/tempmd (packages/client; repo not public)
+  description: Runtime-neutral client for publishing temporary previews to temp.md
+  note: Wraps the publish-session protocol (createPublishSession / uploadPublishSessionFile / finalizePublishSession) for delegated browser publishing with a publish grant.
+- language: javascript
+  registry: npm
+  name: '@tempmd/platform'
+  url: https://www.npmjs.com/package/@tempmd/platform
+  install: npm install @tempmd/platform
+  official: true
+  kind: sdk
+  runtime: server (Node)
+  version: 0.2.0
+  published: '2026-09-06'
+  first_published: '2026-08-26'
+  license: MIT
+  repository: https://github.com/tempmd/tempmd (packages/platform; repo not public)
+  description: Server SDK for embedding temp.md previews in multi-tenant products
+  note: Wraps openapi/temp-md-platform-openapi.yml (Organizations, Applications, application keys, publish grants, previews, review requests, webhooks, usage).
+- language: javascript
+  registry: npm
+  name: yank-note-extension-tempmd
+  url: https://www.npmjs.com/package/yank-note-extension-tempmd
+  official: true
+  kind: editor-plugin
+  version: 0.1.0
+  published: '2026-08-26'
+  license: MIT
+  repository: https://github.com/tempmd/yank-note-extension-tempmd
+  description: Publish Yank Note documents to unlisted, expiring temp.md preview URLs
+source_only_packages:
+- name: grapesjs-plugin-tempmd
+  registry: github
+  url: https://github.com/tempmd/grapesjs-plugin-tempmd
+  official: true
+  kind: editor-plugin
+  version: null
+  note: Not published to npm (registry.npmjs.org/grapesjs-plugin-tempmd and @tempmd/grapesjs-plugin both 404 on 2026-09-19); source only.
+- name: acode-plugin-tempmd
+  registry: github
+  url: https://github.com/tempmd/acode-plugin-tempmd
+  official: true
+  kind: editor-plugin
+  version: null
+  note: Not published to npm (404 on 2026-09-19); source only.
+third_party_packages: []

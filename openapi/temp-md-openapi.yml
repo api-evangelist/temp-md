@@ -1,0 +1,1369 @@
+# Faithful YAML rendering of https://temp.md/openapi.json (fetched 2026-09-19, verbatim copy in openapi/_original/temp-md-openapi.json). No content added or removed.
+openapi: 3.1.0
+info:
+  title: temp.md Public API
+  version: 1.0.0
+  description: Publish agent-made files and applications to one canonical URL, update them atomically, and recover owner credentials
+    without changing the shared link.
+  termsOfService: https://temp.md/terms
+  license:
+    name: API terms
+    url: https://temp.md/terms
+externalDocs:
+  description: temp.md documentation
+  url: https://temp.md/docs
+servers:
+- url: https://api.temp.md
+  description: Production
+tags:
+- name: Publish
+- name: Lifecycle
+- name: Comments
+- name: Accounts
+- name: Safety
+- name: Agents
+paths:
+  /.well-known/agent-card.json:
+    get:
+      operationId: getA2AAgentCard
+      summary: Discover the A2A 1.0 agent
+      tags:
+      - Agents
+      responses:
+        '200':
+          description: A2A Agent Card
+          content:
+            application/a2a+json:
+              schema:
+                type: object
+                required:
+                - name
+                - supportedInterfaces
+                - version
+                - skills
+                additionalProperties: true
+  /a2a:
+    post:
+      operationId: sendA2AJsonRpc
+      summary: Send an A2A 1.0 JSON-RPC request
+      description: Supports SendMessage, GetTask, ListTasks, and CancelTask. Publish and update operations accept the same
+        20-file, 10 MiB inline bundle shape as remote MCP.
+      tags:
+      - Agents
+      parameters:
+      - name: A2A-Version
+        in: header
+        required: false
+        schema:
+          const: '1.0'
+          default: '1.0'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JsonRpcRequest'
+          application/a2a+json:
+            schema:
+              $ref: '#/components/schemas/JsonRpcRequest'
+      responses:
+        '200':
+          description: A2A JSON-RPC response
+          content:
+            application/a2a+json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '415':
+          $ref: '#/components/responses/BadRequest'
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check API health
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - env
+                properties:
+                  ok:
+                    const: true
+                  env:
+                    type: string
+  /temps:
+    post:
+      operationId: createTemp
+      summary: Publish a small multipart bundle
+      description: Creates an anonymous Temp. Use publish sessions for resumable or larger directory publishing.
+      tags:
+      - Publish
+      parameters:
+      - $ref: '#/components/parameters/ClientIdentity'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  contentEncoding: binary
+                  format: binary
+                  description: Main artifact, stored as index.html.
+                title:
+                  type: string
+                  maxLength: 120
+                spaMode:
+                  type: boolean
+                  default: false
+              additionalProperties:
+                type: string
+                contentEncoding: binary
+                format: binary
+                description: Additional file fields use files/<relative-path>.
+      responses:
+        '201':
+          description: Published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTempResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /temps/{tempId}:
+    put:
+      operationId: updateTemp
+      summary: Replace a Temp with a new multipart Version
+      description: The previous Version stays live unless the complete new Version succeeds.
+      tags:
+      - Publish
+      security:
+      - tempCapability: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  contentEncoding: binary
+                  format: binary
+                title:
+                  type: string
+                  maxLength: 120
+                spaMode:
+                  type: boolean
+              additionalProperties:
+                type: string
+                contentEncoding: binary
+                format: binary
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTempResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/Gone'
+    delete:
+      operationId: revokeTemp
+      summary: Permanently revoke a Temp and delete its artifacts
+      description: Immediately makes the public link unavailable, revokes scoped capabilities, and deletes every stored Version.
+        If storage cleanup is temporarily unavailable, the link remains revoked while cleanup is retried in the background.
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      responses:
+        '200':
+          description: Temp revoked and artifacts deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeTempResult'
+        '202':
+          description: Temp revoked; artifact cleanup queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeTempResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /publish-sessions:
+    post:
+      operationId: createPublishSession
+      summary: Create or resume an idempotent upload session
+      description: Omit tempId to create. Account authentication makes the new Temp owned immediately. Provide tempId to update
+        with an account API key or scoped update token.
+      tags:
+      - Publish
+      security:
+      - {}
+      - accountBearer: []
+      - tempCapability: []
+      parameters:
+      - $ref: '#/components/parameters/ClientIdentity'
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePublishSessionInput'
+      responses:
+        '200':
+          description: Existing finalized session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishSession'
+        '201':
+          description: Session ready for uploads
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /publish-sessions/{sessionId}:
+    get:
+      operationId: getPublishSession
+      summary: Resume a publish session
+      tags:
+      - Publish
+      security:
+      - publishSessionToken: []
+      parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      responses:
+        '200':
+          description: Current session and file states
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishSession'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /publish-sessions/{sessionId}/files/{fileId}:
+    put:
+      operationId: uploadPublishSessionFile
+      summary: Upload one declared file
+      tags:
+      - Publish
+      security:
+      - publishSessionToken: []
+      parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              contentEncoding: binary
+              format: binary
+      responses:
+        '200':
+          description: File accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - sessionId
+                - fileId
+                - path
+                - size
+                - hash
+                properties:
+                  ok:
+                    const: true
+                  sessionId:
+                    type: string
+                  fileId:
+                    type: string
+                  path:
+                    type: string
+                  size:
+                    type: integer
+                    minimum: 0
+                  hash:
+                    type: string
+                    pattern: ^[a-f0-9]{64}$
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+  /publish-sessions/{sessionId}/finalize:
+    post:
+      operationId: finalizePublishSession
+      summary: Verify and atomically promote a Version
+      tags:
+      - Publish
+      security:
+      - publishSessionToken: []
+      parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      responses:
+        '200':
+          description: Version promoted; safe to retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinalizeResult'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '422':
+          $ref: '#/components/responses/BadRequest'
+  /temps/{tempId}/status:
+    get:
+      operationId: getTempStatus
+      summary: Read lifecycle and access status
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      responses:
+        '200':
+          description: Temp status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempStatus'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /temps/{tempId}/restore:
+    post:
+      operationId: restoreTemp
+      summary: Restore an expired Temp within its restore window
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /temps/{tempId}/snapshot:
+    post:
+      operationId: snapshotTemp
+      summary: Freeze the current Version
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                  maxLength: 120
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /temps/{tempId}/settings:
+    patch:
+      operationId: updateTempCapabilitySettings
+      summary: Update Temp settings
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commentsEnabled:
+                  type: boolean
+                spaMode:
+                  type: boolean
+              minProperties: 1
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /temps/{tempId}/comments:
+    get:
+      operationId: listTempComments
+      summary: List visible comments
+      tags:
+      - Comments
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      responses:
+        '200':
+          description: Visible comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: appendTempComments
+      summary: Append validated visitor comments
+      tags:
+      - Comments
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              maxItems: 200
+              items:
+                type: object
+                required:
+                - id
+                properties:
+                  id:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                    pattern: ^[A-Za-z0-9._:-]+$
+                additionalProperties: true
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /auth/signup:
+    post:
+      operationId: signup
+      summary: Create an account
+      tags:
+      - Accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupInput'
+      responses:
+        '201':
+          description: Authenticated account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /auth/login:
+    post:
+      operationId: login
+      summary: Create an account session
+      tags:
+      - Accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Authenticated account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /me/api-keys:
+    get:
+      operationId: listApiKeys
+      summary: List named API keys without secrets
+      tags:
+      - Accounts
+      security:
+      - accountBearer: []
+      responses:
+        '200':
+          description: Key metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - keys
+                properties:
+                  keys:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createApiKey
+      summary: Create a named API key
+      description: The raw token is returned once and stored only as a hash.
+      tags:
+      - Accounts
+      security:
+      - accountBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+              additionalProperties: false
+      responses:
+        '201':
+          description: Key and one-time secret
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - key
+                - token
+                - message
+                properties:
+                  key:
+                    $ref: '#/components/schemas/ApiKey'
+                  token:
+                    type: string
+                    writeOnly: true
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /me/api-keys/{keyId}:
+    delete:
+      operationId: revokeApiKey
+      summary: Revoke an API key immediately
+      tags:
+      - Accounts
+      security:
+      - accountBearer: []
+      parameters:
+      - name: keyId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[a-f0-9]{32}$
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /me/temps/{tempId}/update-token:
+    post:
+      operationId: rotateUpdateToken
+      summary: Recover a lost scoped update token
+      description: Atomically invalidates every prior update token and returns one replacement exactly once.
+      tags:
+      - Accounts
+      security:
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      responses:
+        '200':
+          description: Replacement credential and Temp state
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - tempId
+                - canonicalUrl
+                - updateToken
+                - status
+                - expiresAt
+                - spaMode
+                - message
+                properties:
+                  tempId:
+                    type: string
+                  canonicalUrl:
+                    type: string
+                    format: uri
+                  updateToken:
+                    type: string
+                    writeOnly: true
+                  status:
+                    $ref: '#/components/schemas/LifecycleStatus'
+                  expiresAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                  spaMode:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /abuse-reports:
+    post:
+      operationId: reportAbuse
+      summary: Report unsafe content
+      tags:
+      - Safety
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - url
+              - category
+              properties:
+                url:
+                  type: string
+                  format: uri
+                category:
+                  enum:
+                  - phishing
+                  - malware
+                  - spam
+                  - copyright
+                  - privacy
+                  - other
+                details:
+                  type: string
+                  maxLength: 4000
+                contactEmail:
+                  type: string
+                  format: email
+                  maxLength: 254
+              additionalProperties: false
+      responses:
+        '201':
+          $ref: '#/components/responses/SuccessObject'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  securitySchemes:
+    tempCapability:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd scoped capability
+    publishSessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_upload session capability
+    accountBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT or tempmd_key API key
+  parameters:
+    TempId:
+      name: tempId
+      in: path
+      required: true
+      schema:
+        type: string
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+    ClientIdentity:
+      name: X-Tempmd-Client
+      in: header
+      required: false
+      description: Sanitized product/version identifier for operational attribution. Never include user data or capabilities.
+      schema:
+        type: string
+        maxLength: 80
+        pattern: ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$
+  schemas:
+    LifecycleStatus:
+      type: string
+      enum:
+      - drafting
+      - active
+      - cooling
+      - expired
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    CreateTempResult:
+      type: object
+      required:
+      - tempId
+      - canonicalUrl
+      - updateToken
+      - claimToken
+      - claimLink
+      - expiresAt
+      - hint
+      properties:
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        updateToken:
+          type: string
+          writeOnly: true
+        claimToken:
+          type: string
+          writeOnly: true
+        claimLink:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        hint:
+          type: string
+    UpdateTempResult:
+      type: object
+      required:
+      - tempId
+      - versionId
+      - canonicalUrl
+      - expiresAt
+      - spaMode
+      properties:
+        tempId:
+          type: string
+        versionId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        spaMode:
+          type: boolean
+    UploadManifestFile:
+      type: object
+      required:
+      - path
+      - size
+      - contentType
+      - hash
+      properties:
+        path:
+          type: string
+          minLength: 1
+          maxLength: 512
+        size:
+          type: integer
+          minimum: 0
+          maximum: 10485760
+        contentType:
+          type: string
+          minLength: 1
+          maxLength: 255
+        hash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      additionalProperties: false
+    CreatePublishSessionInput:
+      type: object
+      required:
+      - files
+      properties:
+        files:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/UploadManifestFile'
+        tempId:
+          type: string
+        title:
+          type: string
+          maxLength: 120
+        spaMode:
+          type: boolean
+      additionalProperties: false
+    PublishSessionFile:
+      type: object
+      required:
+      - fileId
+      - path
+      - size
+      - contentType
+      - hash
+      - status
+      - method
+      - url
+      - headers
+      properties:
+        fileId:
+          type: string
+        path:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+        hash:
+          type: string
+        status:
+          enum:
+          - expected
+          - uploaded
+        method:
+          const: PUT
+        url:
+          type: string
+          format: uri
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+    PublishSession:
+      type: object
+      required:
+      - sessionId
+      - tempId
+      - versionId
+      - operation
+      - status
+      - uploadToken
+      - uploads
+      - skipped
+      - finalizeUrl
+      - statusUrl
+      - expiresAt
+      properties:
+        sessionId:
+          type: string
+        tempId:
+          type: string
+        versionId:
+          type: string
+        operation:
+          enum:
+          - create
+          - update
+        status:
+          enum:
+          - pending
+          - ready
+          - failed
+          - expired
+        uploadToken:
+          type: string
+          writeOnly: true
+        uploads:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublishSessionFile'
+        skipped:
+          type: array
+          items:
+            type: string
+        finalizeUrl:
+          type: string
+          format: uri
+        statusUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+    FinalizeResult:
+      type: object
+      required:
+      - success
+      - sessionId
+      - tempId
+      - versionId
+      - canonicalUrl
+      - status
+      - expiresAt
+      properties:
+        success:
+          const: true
+        sessionId:
+          type: string
+        tempId:
+          type: string
+        versionId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        status:
+          const: ready
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        ownershipState:
+          enum:
+          - anonymous
+          - claimed
+        updateToken:
+          type: string
+          writeOnly: true
+        claimToken:
+          type: string
+          writeOnly: true
+        claimLink:
+          type: string
+          format: uri
+    RevokeTempResult:
+      type: object
+      required:
+      - ok
+      - tempId
+      - canonicalUrl
+      - status
+      - artifactsDeleted
+      - cleanupPending
+      properties:
+        ok:
+          const: true
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        status:
+          const: revoked
+        artifactsDeleted:
+          type: integer
+          minimum: 0
+        cleanupPending:
+          type: boolean
+        message:
+          type: string
+      additionalProperties: false
+    TempStatus:
+      type: object
+      required:
+      - tempId
+      - canonicalUrl
+      - status
+      - ownershipState
+      - privacyMode
+      - spaMode
+      - moderationState
+      - commentsEnabled
+      - restoreEligible
+      properties:
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        status:
+          $ref: '#/components/schemas/LifecycleStatus'
+        ownershipState:
+          enum:
+          - anonymous
+          - claimed
+        privacyMode:
+          enum:
+          - unlisted
+          - password_protected
+        title:
+          type:
+          - string
+          - 'null'
+        spaMode:
+          type: boolean
+        moderationState:
+          enum:
+          - active
+          - suspended
+          - removed
+        commentsEnabled:
+          type: boolean
+        lastActivityAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        coolingStartsAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        restoreUntil:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        restoreEligible:
+          type:
+          - boolean
+          - 'null'
+    LoginInput:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          minLength: 1
+          maxLength: 128
+          writeOnly: true
+      additionalProperties: false
+    SignupInput:
+      allOf:
+      - $ref: '#/components/schemas/LoginInput'
+      - type: object
+        properties:
+          password:
+            type: string
+            format: password
+            minLength: 8
+            maxLength: 128
+            writeOnly: true
+    LoginResult:
+      type: object
+      required:
+      - token
+      - userId
+      - email
+      properties:
+        token:
+          type: string
+          writeOnly: true
+        userId:
+          type: string
+        email:
+          type: string
+          format: email
+    ApiKey:
+      type: object
+      required:
+      - id
+      - name
+      - suffix
+      - status
+      - createdAt
+      - lastUsedAt
+      - revokedAt
+      - current
+      properties:
+        id:
+          type: string
+          pattern: ^[a-f0-9]{32}$
+        name:
+          type: string
+        suffix:
+          type: string
+          pattern: ^[a-f0-9]{8}$
+        status:
+          enum:
+          - active
+          - revoked
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        revokedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        current:
+          type: boolean
+    JsonRpcRequest:
+      type: object
+      required:
+      - jsonrpc
+      - method
+      - params
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id:
+          type:
+          - string
+          - integer
+          - 'null'
+        method:
+          enum:
+          - SendMessage
+          - GetTask
+          - ListTasks
+          - CancelTask
+        params:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+    JsonRpcResponse:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id:
+          type:
+          - string
+          - integer
+          - 'null'
+        result: {}
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data: {}
+  responses:
+    SuccessObject:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Request conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Gone:
+      description: Resource expired or recovery window closed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

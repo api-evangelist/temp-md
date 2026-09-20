@@ -1,0 +1,108 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  https://temp.md/openapi.json + https://temp.md/platform-openapi.json (both OpenAPI 3.1.0, fetched 2026-09-19),
+  live probes of https://api.temp.md/mcp and https://api.temp.md/a2a, https://temp.md/.well-known/ (agent-card.json,
+  mcp.json, agent.json), https://temp.md/llms.txt, https://temp.md/limits.json, https://temp.md/docs, and the
+  well-known probe log in well-known/temp-md-well-known.yml.
+standards:
+- id: openapi-3.1
+  conforms: true
+  evidence: >-
+    Two first-party OpenAPI 3.1.0 documents served from the apex: /openapi.json ("temp.md Public API" 1.0.0, 20
+    paths / 23 operations, servers https://api.temp.md) and /platform-openapi.json ("Temp.md Embedded Preview
+    Platform API" 0.1.0, 21 paths / 27 operations). Captured verbatim under openapi/_original/.
+- id: mcp
+  conforms: true
+  evidence: >-
+    Hosted Streamable HTTP MCP server at https://api.temp.md/mcp; initialize negotiated protocolVersion 2025-06-18
+    (serverInfo tempmd-remote 1.0.0) and anonymous tools/list returned 8 tools with JSON-Schema inputSchema
+    (mcp/temp-md-mcp-tools.json). Local stdio package @tempmd/mcp 0.4.3 on npm. Listed in the official MCP
+    registry as io.github.tempmd/mcp.
+- id: mcp-server-card
+  conforms: true
+  evidence: >-
+    /.well-known/mcp.json on temp.md declares $schema https://static.modelcontextprotocol.io/schemas/mcp-server-card/v1.json
+    with transport {type: streamable-http, endpoint: https://api.temp.md/mcp}, authentication {required: false,
+    schemes: [bearer]} and protocolVersion 2025-11-25 (well-known/temp-md-mcp.json).
+- id: a2a-1.0
+  conforms: true
+  evidence: >-
+    A2A 1.0 agent card at /.well-known/agent-card.json on temp.md and api.temp.md (supportedInterfaces[0] =
+    {url: https://api.temp.md/a2a, protocolBinding: JSONRPC, protocolVersion: "1.0"}); the JSON-RPC endpoint
+    answers live (ListTasks -> "Authentication required"; SendMessage publish documented as anonymous). The
+    OpenAPI declares the A2A-Version: 1.0 request header and application/a2a+json media type on sendA2AJsonRpc.
+    Graded conformant in a2a/temp-md-a2a.yml.
+- id: json-rpc-2.0
+  conforms: true
+  evidence: The A2A endpoint and the MCP endpoint both speak JSON-RPC 2.0 (JsonRpcRequest/JsonRpcResponse schemas in the OpenAPI; observed error envelopes carry jsonrpc "2.0" and code/message/data with google.rpc.ErrorInfo detail).
+- id: rfc8615-well-known
+  conforms: true
+  evidence: Three real documents under /.well-known/ on temp.md (agent-card.json, mcp.json, agent.json) and one on api.temp.md (agent-card.json). See well-known/temp-md-well-known.yml.
+- id: llms-txt
+  conforms: true
+  evidence: https://temp.md/llms.txt (200, text/plain, 10,075 bytes) in llms.txt format with an H1, blockquote summary and H2 sections; saved verbatim to llms/temp-md-llms.txt. No llms-full.txt (the path returns the SPA shell).
+- id: idempotency-key
+  conforms: true
+  scope: partial
+  evidence: >-
+    Idempotency-Key request header is REQUIRED on POST /publish-sessions (createPublishSession) and POST
+    /v1/publish-sessions (createPlatformPublishSession); the docs state "Always send a stable Idempotency-Key"
+    and a live POST without one returned 400 code invalid_idempotency_key ("Use a stable Idempotency-Key of at
+    most 128 characters when creating or retrying a session"). finalizePublishSession is documented "safe to
+    retry". The MCP publish_temp/update_temp tools take idempotency_key and are described as idempotent on
+    repeated identical calls. The multipart createTemp / updateTemp path has no key. Not the IETF draft header
+    semantics end-to-end (no Idempotency-Replayed signal documented). Detail in conventions/temp-md-conventions.yml.
+- id: rfc9457-problem-details
+  conforms: false
+  evidence: >-
+    Errors are application/json with a provider envelope {error, code, message, request_id, docs_url, retry_after}
+    (Error schema; observed live on 401 and 400). No application/problem+json anywhere in either OpenAPI.
+    See errors/temp-md-problem-types.yml.
+- id: retry-after
+  conforms: true
+  evidence: RateLimited response declares a Retry-After header in openapi.json; docs state 429s "return retry_after and the HTTP Retry-After header"; api.temp.md exposes Retry-After via Access-Control-Expose-Headers on live responses.
+- id: oauth2
+  conforms: false
+  evidence: All seven securitySchemes across both specs are type http / scheme bearer with provider-issued capability tokens and API keys (tempmd_key_, tempmd_app_, tempmd_grant_, tempmd_view_, scoped update tokens). No OAuth 2.0 flows, no authorization server.
+- id: rfc8414-authorization-server-metadata
+  conforms: false
+  evidence: /.well-known/oauth-authorization-server is a 404 on api.temp.md and an SPA shell on temp.md.
+- id: rfc9728-protected-resource-metadata
+  conforms: false
+  evidence: /.well-known/oauth-protected-resource is a 404 on api.temp.md (the MCP resource host) and an SPA shell on temp.md. Not expected - the MCP server is anonymous with an optional API key.
+- id: oidc-discovery
+  conforms: false
+  evidence: /.well-known/openid-configuration 404 on api.temp.md; SPA shell on temp.md.
+- id: rfc9116-security-txt
+  conforms: false
+  evidence: No security.txt on any host (api.temp.md 404; temp.md returns the SPA shell). No SecurityTxt pointer emitted.
+- id: rfc9727-api-catalog
+  conforms: false
+  evidence: /.well-known/api-catalog 404 on api.temp.md; SPA shell on temp.md.
+- id: rfc8594-sunset-header
+  conforms: false
+  evidence: No Deprecation/Sunset headers, no deprecation policy page, and no operation marked deprecated in either spec. (410 Gone is used for an EXPIRED Temp resource, which is object lifecycle, not API deprecation.)
+- id: asyncapi
+  conforms: false
+  evidence: No AsyncAPI document (/asyncapi.yaml returns the SPA shell on temp.md, 404 on api.temp.md). The platform API does ship signed webhooks (asyncapi/temp-md-webhooks.yml).
+- id: json-api
+  conforms: false
+  evidence: Plain JSON objects/arrays; no application/vnd.api+json.
+- id: pagination
+  conforms: false
+  evidence: No pagination parameters on any list operation (listTempComments, listApiKeys, listPlatformPreviews, listWebhookDeliveries, listReviewRequests take no limit/cursor/page). Lists are returned whole.
+- id: sha-256-content-addressing
+  conforms: true
+  evidence: Publish sessions require a lowercase SHA-256 hash per manifest file (UploadManifestFile.hash; limits.json sha256RequiredForSessions true); uploads that do not match size/hash are rejected and unchanged files are skipped.
+domain_standard:
+  applicable: false
+  note: >-
+    Static-artifact hosting for AI agents has no sector standard of the SCIM/OData/OpenRTB kind to declare; the
+    interoperable contracts it implements (MCP, A2A 1.0, llms.txt, MCP server card) are recorded above. No
+    conformance is invented to fill the slot.
+compliance_programs:
+  published: false
+  note: >-
+    No SOC 2 / ISO 27001 / trust center / certification claim anywhere on temp.md (probe-security-programs.py
+    2026-09-19: vdp=none trust=none). No Compliance pointer emitted.

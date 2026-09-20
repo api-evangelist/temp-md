@@ -1,0 +1,175 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  https://temp.md/docs (publish, update, revoke, sessions, response, lifecycle, limits, errors, privacy sections),
+  https://temp.md/llms.txt, https://temp.md/skill.md, https://temp.md/limits.json, openapi/temp-md-openapi.yml and
+  openapi/temp-md-platform-openapi.yml, plus live unauthenticated responses from api.temp.md on 2026-09-19.
+description: >-
+  How temp.md's REST API behaves across operations: capability-token auth, idempotency (session-scoped),
+  no pagination, request tracing, versioning, the error envelope, rate-limit signaling, and - the part that
+  matters most to an agent about to act - what can be undone and within what window.
+base_url: https://api.temp.md
+api_style: REST over HTTPS; multipart/form-data for direct publish, JSON for everything else; JSON responses. Same core also exposed as JSON-RPC (MCP at /mcp, A2A 1.0 at /a2a).
+
+authentication:
+  scheme: HTTP Bearer with capability tokens; anonymous publish allowed
+  token_types: [scoped update token (per Temp), publish-session token (1h), account JWT / API key tempmd_key_, platform tempmd_app_ / tempmd_grant_ / tempmd_view_]
+  docs: https://temp.md/docs#publish
+  detail: authentication/temp-md-authentication.yml
+
+idempotency:
+  supported: true
+  coverage: partial
+  scope: [createPublishSession, createPlatformPublishSession, finalizePublishSession, MCP publish_temp, MCP update_temp]
+  mechanism: Idempotency-Key request header (required, <=128 chars) on POST /publish-sessions and POST /v1/publish-sessions; idempotency_key argument on the MCP publish_temp / update_temp tools
+  applies_to: >-
+    Publish sessions only. The direct multipart POST /temps and PUT /temps/{tempId} accept no key, and the
+    other mutating operations (revoke, restore, snapshot, settings, comments, signup, API keys, abuse reports)
+    have no replay protection - a retried POST /temps creates a second Temp with a second URL.
+  key_format: Client-generated stable string, max 128 characters (docs example is a UUID)
+  retention: Not stated. The session itself lives one hour (publishSessionTtlSeconds 3600); a repeated create with the same key returns the existing session (200 "Existing finalized session" vs 201 "Session ready for uploads").
+  conflict_behavior: 409 Conflict when a key is reused with a different manifest (declared on createPublishSession); a missing/invalid key is 400 invalid_idempotency_key (observed live).
+  natural_idempotency: PUT /temps/{tempId} is an atomic full replace ("A failed update never replaces the live version"); finalize is documented "safe to retry"; PUT of a session file "accepts exactly the bytes declared in the manifest" so a re-upload is harmless; unchanged files are skipped by hash.
+  docs: https://temp.md/docs#sessions
+  note: >-
+    partial, not full - the mechanism is real and required where it exists, but the marquee anonymous publish
+    path (createTemp) is the one an agent is most likely to retry and it is unprotected. The provider's own
+    guidance is to keep a .tempmd record and UPDATE rather than re-publish, which is a process control, not a
+    protocol one.
+
+dry_run:
+  supported: false
+  note: No dry-run / validate-only mode on any operation. The closest thing is the publish-session manifest step, which validates paths, sizes and hashes before any bytes are promoted, and snapshots, which let a reviewer see an exact state without touching the canonical link.
+
+reversibility:
+  grade: verified
+  docs: https://temp.md/docs#lifecycle
+  note: >-
+    The API's central reversal - bringing an expired Temp back at the same URL - has a reversal operation
+    (restoreTemp) AND a stated window (7 days after expiry; limits.json restoreGraceSeconds 604800; docs "can be
+    restored within 7 days of expiry"), so the grade is verified. The other write surfaces are graded
+    individually below; two of them (revoke, API-key revoke) are explicitly one-way doors and are recorded as
+    such rather than averaged away.
+  write_surfaces:
+  - operation: createTemp / createPublishSession+finalizePublishSession (new Temp)
+    action: Publish a new public URL
+    reversal: revokeTemp (DELETE /temps/{tempId}) removes it; or let it expire (7-day active window, 48h cooling)
+    reversal_operation: revokeTemp
+    window: 'any time while the Temp exists'
+    grade: documented
+    note: Revoking is itself irreversible (below). Expiry is the passive reversal and is fully specified in limits.json.
+  - operation: updateTemp / update via publish session
+    action: Replace the live Version behind the canonical URL
+    reversal: none as an API operation - there is no rollback-to-previous-Version endpoint. snapshotTemp taken BEFORE an update preserves an addressable copy at <slug>.temp.md/__v/<versionId>, and a client can re-PUT that content.
+    reversal_operation: null
+    window: null
+    grade: documented
+    note: 'Docs: "A failed update never replaces the live version" - failure is safe; a SUCCESSFUL bad update must be fixed by publishing again. Snapshots are the mitigation the provider recommends ("when exactness matters").'
+  - operation: expiry (passive) -> restoreTemp
+    action: A Temp that went inactive expired
+    reversal: POST /temps/{tempId}/restore reactivates the same canonical URL
+    reversal_operation: restoreTemp
+    window: 'within 7 days of expiry (restoreUntil / restoreEligible in TempStatus; limits.json restoreGraceSeconds = 604800)'
+    stated_terms:
+    - source: https://temp.md/docs#lifecycle
+      verbatim: 'After expiry, files enter a 7-day grace period where they can be restored. After that they are deleted.'
+    - source: https://temp.md/llms.txt
+      verbatim: 'Temps expire intentionally when inactive (48-hour cooling period first) and can be restored within 7 days of expiry.'
+    grade: verified
+    rate_limit: 20 restores / hour / Temp / IP
+  - operation: revokeTemp
+    action: Permanently revoke a Temp and delete every stored Version
+    reversal: none
+    reversal_operation: null
+    window: null
+    stated_terms:
+    - source: https://temp.md/docs#revoke
+      verbatim: 'Revocation invalidates the Temp''s update and claim capabilities and deletes every stored Version. It cannot be restored.'
+    grade: none
+    note: One-way door. Notably absent from both the MCP tool list and the A2A skills - the agent surfaces do not expose it.
+  - operation: snapshotTemp
+    action: Freeze the current Version at a fixed URL
+    reversal: not needed - additive; the canonical URL is unaffected. No documented way to delete a single snapshot short of revoking the Temp.
+    grade: documented
+  - operation: updateTempCapabilitySettings (commentsEnabled, spaMode)
+    action: Toggle comments / SPA fallback
+    reversal: the same PATCH with the opposite value; 'Existing comments are preserved - they''ll reappear if you re-enable.'
+    reversal_operation: updateTempCapabilitySettings
+    window: 'any time'
+    grade: verified
+  - operation: appendTempComments
+    action: Append visitor comments
+    reversal: none for visitors ('append-only ... cannot overwrite or delete'); claimed owners can remove comments from the dashboard (no API op in the public spec)
+    grade: documented
+  - operation: claim (dashboard) / rotateUpdateToken
+    action: Rotate the scoped update token
+    reversal: none - every prior token is invalidated atomically and the replacement is returned exactly once
+    grade: none
+  - operation: revokeApiKey
+    action: Revoke an account API key
+    reversal: none ('Revoked keys cannot authenticate subsequent requests'); create a new key
+    grade: none
+  - operation: revokePlatformPreview / revokeApplicationKey / revokePublishGrant / disableWebhookEndpoint / disableDomainBinding (platform)
+    action: Platform-side revocations
+    reversal: none documented in the platform spec
+    grade: none
+
+pagination:
+  style: none
+  note: No list operation takes limit/cursor/page parameters (listTempComments, listApiKeys, listPlatformPreviews with optional external_project_id filter, listWebhookDeliveries, listReviewRequests, getPlatformUsage with from/to date range). Lists return whole.
+
+field_expansion:
+  supported: false
+
+metadata:
+  supported: partial
+  mechanism: 'title (<=120 chars) on a Temp; label on a snapshot; externalSubjectId / externalProjectId (opaque, platform) on Previews and publish grants'
+
+request_tracing:
+  request_id_header: X-Request-Id
+  body_field: request_id
+  description: Every api.temp.md response carries X-Request-Id (UUID) and exposes it via Access-Control-Expose-Headers; error bodies repeat it as request_id. Observed live 2026-09-19.
+  client_identity_header: 'X-Tempmd-Client: product/version (optional attribution; sanitized; never user data)'
+
+versioning:
+  scheme: unversioned public API; /v1 path-versioned platform API; A2A-Version header; MCP-Protocol-Version header
+  detail: lifecycle/temp-md-lifecycle.yml
+  changelog: changelog/temp-md-changelog.yml
+
+error_envelope:
+  media_type: application/json
+  rfc9457: false
+  shape: '{ "error", "code", "message", "request_id", "docs_url", "retry_after" }'
+  detail: errors/temp-md-problem-types.yml
+  docs: https://temp.md/docs#errors
+
+rate_limits:
+  signal_status: 429
+  headers: [Retry-After]
+  body_field: retry_after
+  no_quota_headers: No X-RateLimit-* / RateLimit-* headers on successful responses (observed on GET /health).
+  detail: rate-limits/temp-md-rate-limits.yml
+  machine_readable: https://temp.md/limits.json
+
+webhooks:
+  scope: platform API only (Application webhook endpoints, signed; one-time signing secret at creation; delivery attempts inspectable)
+  detail: asyncapi/temp-md-webhooks.yml
+
+content_negotiation:
+  publish: 'multipart/form-data; the `file` part''s MIME type drives rendering (text/html, text/markdown, text/csv, text/x-mermaid); extra parts named files/<relative-path>'
+  a2a: application/json or application/a2a+json in; application/a2a+json out
+  mcp: Streamable HTTP; Accept application/json, text/event-stream
+
+other_conventions:
+- name: Canonical URL vs version URL
+  detail: 'Give humans only the canonical <slug>.temp.md link; snapshots live at <slug>.temp.md/__v/<versionId>. "Never share version-specific links." (llms.txt)'
+- name: Project state file
+  detail: 'Agents keep a .tempmd record (Temp ID | URL | Update Token | Expires | Claim Link; schema https://temp.md/schemas/project-state-v1.json) and update an existing Temp rather than creating a second link.'
+- name: Safe relative paths
+  detail: Absolute paths, traversal, backslashes, duplicates and temp.md-reserved paths are rejected (400); max 512 chars, depth 20.
+- name: Content addressing
+  detail: Publish sessions declare size + lowercase SHA-256 per file; unchanged files are skipped, mismatches rejected.
+- name: Timestamps
+  detail: ISO 8601 UTC (expiresAt, coolingStartsAt, restoreUntil, lastActivityAt).
+- name: Machine discovery
+  detail: /.well-known/agent.json links every surface; llms.txt, limits.json, pricing.json, openapi.json, platform-openapi.json, /.well-known/mcp.json, /.well-known/agent-card.json, skill.md.

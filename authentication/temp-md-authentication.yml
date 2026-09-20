@@ -1,0 +1,83 @@
+generated: '2026-09-19'
+method: searched
+source: openapi/temp-md-openapi.yml, openapi/temp-md-platform-openapi.yml, https://temp.md/docs, https://temp.md/.well-known/agent.json, live probes 2026-09-19
+docs: https://temp.md/docs#publish
+summary:
+  types: [http]
+  schemes_count: 7
+  anonymous_publish: true
+  oauth2: false
+  note: >-
+    Everything is HTTP Bearer, and the interesting part is WHICH token: temp.md is capability-based. An anonymous
+    POST /temps returns a scoped updateToken (and claimToken) that is the only credential needed to update,
+    inspect, snapshot, restore or revoke that one Temp. Accounts are optional; an account session JWT or a named
+    API key (prefix tempmd_key_) owns Temps, recovers lost update tokens and manages keys. The partner platform
+    adds server-only Application keys (tempmd_app_<id>_<secret>, one-time reveal, explicit scopes), short-lived
+    delegated publish grants (tempmd_grant_...) for browsers, and review-viewer capabilities (tempmd_view_...).
+    The derive-authentication.py baseline collapsed these to one scheme because all share type http/bearer;
+    this file lists each with its bearerFormat and where it is accepted.
+anonymous_operations:
+  note: No credential at all (security absent or an empty {} alternative in the spec)
+  operations: [createTemp, createPublishSession (anonymous alternative), listTempComments, appendTempComments, signup, login, reportAbuse, getHealth, getA2AAgentCard, sendA2AJsonRpc (publish), MCP tools/list + publish_temp]
+schemes:
+- name: tempCapability
+  type: http
+  scheme: bearer
+  bearerFormat: tempmd scoped capability
+  what_it_is: The per-Temp updateToken returned by createTemp / finalizePublishSession (or the claimToken for status/restore). Prefix observed in docs examples "tempmd_...".
+  obtained_from: response of POST /temps (updateToken, claimToken) or POST /publish-sessions/{id}/finalize
+  accepted_on: [updateTemp, revokeTemp, createPublishSession (tempId update), getTempStatus, restoreTemp, snapshotTemp, updateTempCapabilitySettings]
+  rotation: Claiming a Temp into an account ROTATES the update token; the old one stops working (docs#privacy, skill.md). rotateUpdateToken invalidates every prior token and returns one replacement exactly once.
+  sources: [openapi/temp-md-openapi.yml]
+- name: publishSessionToken
+  type: http
+  scheme: bearer
+  bearerFormat: tempmd_upload session capability
+  what_it_is: One-hour upload capability (PublishSession.uploadToken) minted by createPublishSession.
+  accepted_on: [getPublishSession, uploadPublishSessionFile, finalizePublishSession]
+  sources: [openapi/temp-md-openapi.yml]
+- name: accountBearer
+  type: http
+  scheme: bearer
+  bearerFormat: JWT or tempmd_key API key
+  what_it_is: Account session token from POST /auth/login (LoginResult.token) or a named API key created with POST /me/api-keys (prefix tempmd_key_, secret shown once, stored hashed, max 20 active keys).
+  accepted_on: [revokeTemp, createPublishSession, getTempStatus, restoreTemp, snapshotTemp, updateTempCapabilitySettings, listApiKeys, createApiKey, revokeApiKey, rotateUpdateToken, MCP connection header (list_temps, recover_update_token, account-owned publish), A2A GetTask/ListTasks]
+  key_management: GET/POST /me/api-keys, DELETE /me/api-keys/{keyId}; CLI `tempmd login`, `tempmd keys`, `tempmd keys revoke <id>`
+  sources: [openapi/temp-md-openapi.yml, https://temp.md/.well-known/agent.json]
+- name: dashboardBearer
+  type: http
+  scheme: bearer
+  description: A Temp.md dashboard session or personal account API key.
+  accepted_on: [createOrganization, getOrganization, createApplication, getApplication, updateApplication, listApplicationKeys, createApplicationKey, revokeApplicationKey, webhook endpoint + domain binding operations]
+  sources: [openapi/temp-md-platform-openapi.yml]
+- name: applicationBearer
+  type: http
+  scheme: bearer
+  bearerFormat: tempmd_app_<id>_<secret>
+  description: Server-only Application key with explicit scopes. Returned once; must never reach a browser or Electron renderer.
+  accepted_on: [listPlatformPreviews, getPlatformPreview, revokePlatformPreview, createPublishGrant, revokePublishGrant, createPlatformPublishSession, listReviewRequests, createReviewRequest, getPlatformUsage]
+  sources: [openapi/temp-md-platform-openapi.yml, https://temp.md/llms.txt]
+- name: publishGrantBearer
+  type: http
+  scheme: bearer
+  bearerFormat: tempmd_grant_<id>_<secret>
+  description: Short-lived, one-session delegated publishing authority (backend mints a 5-15 minute grant; requests carrying an Origin header MUST use a grant, not an Application key).
+  accepted_on: [createPlatformPublishSession]
+  sources: [openapi/temp-md-platform-openapi.yml, https://temp.md/llms.txt]
+- name: reviewBearer
+  type: http
+  scheme: bearer
+  bearerFormat: tempmd_view_<id>_<secret>
+  description: Short-lived viewer capability bound to one frozen review request.
+  accepted_on: [getReviewRequest, createReviewDecision]
+  sources: [openapi/temp-md-platform-openapi.yml]
+headers:
+  authorization: 'Authorization: Bearer <token>'
+  client_identity: 'X-Tempmd-Client: product/version (optional, sanitized attribution only; pattern ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$; never user data or capabilities)'
+cors:
+  note: Capability-backed publish-session, status, update and revoke routes allow credential-free cross-origin requests; account, claim, settings, restore, snapshot and dashboard routes keep a restricted-origin policy. Do not send cookies. (docs#browser-integrations)
+signup:
+  self_serve: true
+  operations: [signup, login]
+  dashboard: https://temp.md/dashboard
+  note: Not required to publish.

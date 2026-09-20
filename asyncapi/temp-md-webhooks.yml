@@ -1,0 +1,38 @@
+generated: '2026-09-19'
+method: searched
+spec_type: Webhooks
+source: openapi/temp-md-platform-openapi.yml (listWebhookEndpoints, createWebhookEndpoint, disableWebhookEndpoint, listWebhookDeliveries) + https://temp.md/integrations/ ("Signed webhooks") + https://temp.md/docs#platform-sdk + https://temp.md/llms.txt
+asyncapi_published: false
+asyncapi_probes:
+- {url: 'https://temp.md/asyncapi.yaml', status: 200, body: SPA shell}
+- {url: 'https://api.temp.md/asyncapi.yaml', status: 404}
+description: >-
+  Webhooks exist ONLY on the Embedded Preview Platform API (partner Applications), not on the public Temp API.
+  An Application registers a signed webhook endpoint (one-time signing secret returned at creation), receives
+  "verifiable lifecycle and review events with retry-safe delivery", and can inspect recent delivery attempts.
+  The @tempmd/platform SDK ships webhook verification. The provider publishes NO event catalog, payload schema,
+  signature header name or retry schedule anywhere public - the platform OpenAPI's webhook operations carry
+  response descriptions only, and the integrations page names the feature without a reference. Everything below
+  is what is actually published; nothing is inferred.
+scope: platform API (/v1), dashboardBearer to manage endpoints
+management_operations:
+- {operationId: listWebhookEndpoints, method: GET, path: '/v1/applications/{applicationId}/webhooks', summary: List webhook endpoints}
+- {operationId: createWebhookEndpoint, method: POST, path: '/v1/applications/{applicationId}/webhooks', summary: Create a signed webhook endpoint, response_201: Endpoint and one-time signing secret}
+- {operationId: disableWebhookEndpoint, method: DELETE, path: '/v1/applications/{applicationId}/webhooks/{endpointId}', summary: Disable a webhook endpoint}
+- {operationId: listWebhookDeliveries, method: GET, path: '/v1/applications/{applicationId}/webhook-deliveries', summary: Inspect recent webhook delivery attempts, response_200: Recent webhook deliveries}
+signing:
+  documented: true
+  detail: 'Signed endpoints; "one-time signing secret" at creation; SDK "webhook verification" (docs#platform-sdk). Header name and algorithm are NOT published.'
+delivery:
+  documented: >-
+    'retry-safe delivery' (integrations page); delivery attempts inspectable via listWebhookDeliveries
+  retry_schedule: not published
+events:
+  catalog_published: false
+  stated_categories:
+  - 'lifecycle events (integrations page: "Receive verifiable lifecycle and review events")'
+  - 'review events (review requests / decisions)'
+  event_names: []
+  payload_schema: not published
+  note: No event names or payload schemas appear in platform-openapi.json, the docs, llms.txt or the SDK README on npm. Recorded as a gap, not filled.
+public_api_webhooks: none - the public Temp API (openapi.json) has no webhook or streaming surface; A2A capabilities.pushNotifications is false and streaming is false.

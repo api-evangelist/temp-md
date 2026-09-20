@@ -1,0 +1,73 @@
+{
+  "$schema": "https://temp.md/schemas/agent-discovery-v1.json",
+  "schemaVersion": "1.0",
+  "name": "temp.md",
+  "description": "Publish agent-made files and web apps to one stable public URL, then update that URL in place.",
+  "homepage": "https://temp.md",
+  "documentation": "https://temp.md/docs",
+  "interfaces": {
+    "rest": {
+      "baseUrl": "https://api.temp.md",
+      "openapi": "https://temp.md/openapi.json"
+    },
+    "cli": {
+      "package": "@tempmd/cli",
+      "executable": "tempmd",
+      "run": "npx -y @tempmd/cli",
+      "registry": "https://www.npmjs.com/package/@tempmd/cli"
+    },
+    "mcp": {
+      "stdio": {
+        "package": "@tempmd/mcp",
+        "transport": "stdio",
+        "run": "npx -y @tempmd/mcp",
+        "registry": "https://www.npmjs.com/package/@tempmd/mcp"
+      },
+      "remote": {
+        "transport": "streamable-http",
+        "url": "https://api.temp.md/mcp",
+        "serverCard": "https://temp.md/.well-known/mcp.json",
+        "authentication": "Anonymous publishing is supported. Optionally send Authorization: Bearer <tempmd_key_...> for account-owned publishing and account tools.",
+        "maxInlineBundleBytes": 10485760,
+        "maxInlineFiles": 20
+      }
+    }
+  },
+  "capabilities": [
+    "publish_file",
+    "publish_directory",
+    "resume_upload",
+    "update_in_place",
+    "skip_unchanged_files",
+    "inspect_lifecycle",
+    "restore_temp",
+    "create_snapshot",
+    "configure_comments",
+    "list_owned_temps",
+    "recover_update_token"
+  ],
+  "authentication": {
+    "anonymousPublish": true,
+    "scopedUpdateCapabilities": true,
+    "accountApiKeys": {
+      "supported": true,
+      "prefix": "tempmd_key_",
+      "createEndpoint": "https://api.temp.md/me/api-keys"
+    }
+  },
+  "limits": "https://temp.md/limits.json",
+  "pricing": "https://temp.md/pricing.json",
+  "projectStateSchema": "https://temp.md/schemas/project-state-v1.json",
+  "llms": "https://temp.md/llms.txt",
+  "a2a": {
+    "supported": true,
+    "protocolVersion": "1.0",
+    "protocolBinding": "JSONRPC",
+    "agentCard": "https://temp.md/.well-known/agent-card.json",
+    "endpoint": "https://api.temp.md/a2a",
+    "operations": ["SendMessage", "GetTask", "ListTasks", "CancelTask"],
+    "taskStorage": "Temp versions are the durable task record.",
+    "streaming": false,
+    "pushNotifications": false
+  }
+}

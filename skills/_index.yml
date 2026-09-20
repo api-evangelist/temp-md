@@ -1,0 +1,26 @@
+generated: '2026-09-19'
+method: searched
+source: >-
+  One skill is PROVIDER-PUBLISHED and saved verbatim (https://temp.md/skill.md, the Claude Code skill the docs
+  tell users to install; 200 text/markdown, 5,647 bytes). Two more are generated from openapi/temp-md-openapi.yml
+  for flows the provider's skill does not cover (the resumable publish-session protocol and account-owned
+  publishing / token recovery); every operationId in them is verified verbatim in the spec, and the rules cite
+  conventions/, errors/ and authentication/.
+skills:
+- file: temp-md-tempmd-skill.md
+  name: tempmd
+  method: searched
+  source: https://temp.md/skill.md
+  api: openapi/temp-md-openapi.yml
+  operations: [createTemp, updateTemp, getTempStatus, restoreTemp, snapshotTemp, updateTempCapabilitySettings]
+  note: Provider-authored; install per docs `curl -sSo ~/.claude/skills/tempmd/SKILL.md https://temp.md/skill.md`. Not modified.
+- file: temp-md-publish-directory-with-sessions.md
+  name: Publish or update a directory with a resumable publish session
+  method: generated
+  api: openapi/temp-md-openapi.yml
+  operations: [createPublishSession, getPublishSession, uploadPublishSessionFile, finalizePublishSession]
+- file: temp-md-account-owned-publishing.md
+  name: Account-owned publishing and update-token recovery
+  method: generated
+  api: openapi/temp-md-openapi.yml
+  operations: [signup, login, createApiKey, listApiKeys, createPublishSession, finalizePublishSession, rotateUpdateToken, revokeApiKey]

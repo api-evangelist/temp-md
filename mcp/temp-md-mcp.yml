@@ -1,0 +1,132 @@
+generated: '2026-09-19'
+method: probed
+status: published
+source: >-
+  Live JSON-RPC probes of https://api.temp.md/mcp on 2026-09-19 (initialize -> serverInfo tempmd-remote 1.0.0,
+  protocolVersion 2025-06-18; tools/list -> 8 tools with inputSchema, saved verbatim to
+  mcp/temp-md-mcp-tools.json), the MCP Server Card at https://temp.md/.well-known/mcp.json, the official MCP
+  registry entry io.github.tempmd/mcp (registry.modelcontextprotocol.io), npm @tempmd/mcp 0.4.3 and the docs at
+  https://temp.md/docs#agents.
+description: >-
+  temp.md ships the same MCP server two ways: a hosted Streamable HTTP endpoint at https://api.temp.md/mcp that
+  any MCP client can POST to with no credential (anonymous publishing), and a local stdio package (npx -y
+  @tempmd/mcp) for filesystem access and the larger 50 MiB / 100-file bundle. The remote transport caps inline
+  bundles at 10 MiB and 20 files (limits.json remoteMcp). An optional Authorization: Bearer tempmd_key_... on the
+  connection turns on account-owned publishing, list_temps and recover_update_token.
+server:
+  name: tempmd-remote
+  title: temp.md
+  version: 1.0.0
+  transport: streamable-http
+  url: https://api.temp.md/mcp
+  protocol_version_negotiated: '2025-06-18'
+  server_card: well-known/temp-md-mcp.json
+  server_card_url: https://temp.md/.well-known/mcp.json
+  capabilities:
+    tools:
+      listChanged: true
+  auth: none (optional Bearer tempmd_key_... account API key)
+  instructions: >-
+    Publish agent-made artifacts to one stable temp.md URL. Use update_temp instead of publishing a second URL
+    when work already has a Temp. Inline bundles are limited to 10 MiB; use tempmd-cli for larger or
+    filesystem-based publishing. An account API key may be supplied as the MCP connection's Authorization:
+    Bearer header.
+local:
+  name: '@tempmd/mcp'
+  transport: stdio
+  install: npx -y @tempmd/mcp
+  executable: tempmd-mcp
+  version: 0.4.3
+  published: '2026-08-27'
+  source: https://github.com/tempmd/tempmd-mcp
+  env:
+  - name: TEMPMD_API_URL
+    description: Override the temp.md API base URL (default https://api.temp.md)
+    required: false
+  compatibility_alias: tempmd-mcp (same implementation and version)
+registry:
+  official_mcp_registry:
+    name: io.github.tempmd/mcp
+    url: https://registry.modelcontextprotocol.io/v0/servers?search=tempmd
+    status: active
+    latest_version: 0.4.3
+    published: '2026-08-27'
+    server_json: https://raw.githubusercontent.com/tempmd/tempmd-mcp/main/server.json
+  glama: https://glama.ai/mcp/servers/tempmd/tempmd-mcp
+client_config:
+  claude_code_remote: claude mcp add --transport http tempmd https://api.temp.md/mcp
+  claude_code_stdio: claude mcp add tempmd -- npx -y @tempmd/mcp
+  generic_stdio: '{"mcpServers":{"tempmd":{"command":"npx","args":["-y","@tempmd/mcp"]}}}'
+tools:
+- name: publish_temp
+  title: Publish a new Temp
+  description: Publish an inline text or base64 bundle to a stable public URL. Send index.html as the main page. Repeated identical calls are idempotent. If the MCP connection uses a temp.md account API key, the Temp is owned by that account immediately.
+  inputs: [files (required, 1-20), title, spa_mode, idempotency_key]
+  remote: true
+  stdio: true
+  source_operation: openapi/temp-md-openapi.yml#createTemp
+- name: update_temp
+  title: Update an existing Temp
+  description: Replace a Temp's bundle behind the same canonical URL.
+  inputs: [temp_id (required), update_token, files (required), title, spa_mode, idempotency_key]
+  remote: true
+  stdio: true
+  source_operation: openapi/temp-md-openapi.yml#updateTemp
+- name: get_temp_status
+  title: Get Temp status
+  description: Check lifecycle and restore eligibility.
+  inputs: [temp_id (required), update_token]
+  remote: true
+  stdio: true
+  source_operation: openapi/temp-md-openapi.yml#getTempStatus
+- name: restore_temp
+  title: Restore an expired Temp
+  description: Bring a recently expired Temp back at the same URL.
+  inputs: [temp_id (required), update_token]
+  remote: true
+  stdio: true
+  source_operation: openapi/temp-md-openapi.yml#restoreTemp
+- name: snapshot_temp
+  title: Freeze a snapshot
+  description: Freeze the current version as a fixed reference.
+  inputs: [temp_id (required), update_token, label]
+  remote: true
+  stdio: true
+  source_operation: openapi/temp-md-openapi.yml#snapshotTemp
+- name: set_comments
+  title: Enable or disable comments
+  description: Toggle pinned visitor comments.
+  inputs: [temp_id (required), update_token, enabled (required)]
+  remote: true
+  stdio: true
+  source_operation: openapi/temp-md-openapi.yml#updateTempCapabilitySettings
+- name: list_temps
+  title: List account Temps
+  description: List local project records (stdio) or account-owned Temps (remote, requires account API key).
+  inputs: []
+  remote: true
+  stdio: true
+  source_operation: null
+  note: No public REST operation lists account Temps in openapi.json; see mcp_only in the crosswalk.
+- name: recover_update_token
+  title: Recover a Temp update token
+  description: Rotate and recover a lost scoped update token (requires account API key).
+  inputs: [temp_id (required)]
+  remote: true
+  stdio: false
+  source_operation: openapi/temp-md-openapi.yml#rotateUpdateToken
+tools_file: mcp/temp-md-mcp-tools.json
+tool_count: 8
+deployment:
+  mode: both
+  endpoint: https://api.temp.md/mcp
+  install: npx -y @tempmd/mcp
+  package: https://www.npmjs.com/package/@tempmd/mcp
+  auth: none
+  auth_note: Anonymous tools/list and publish work with no credential (probed 2026-09-19); an optional provider-issued API key (tempmd_key_...) unlocks account tools. Not OAuth.
+  verified: probed
+  probe:
+    checked: '2026-09-19'
+    initialize: 200 (protocolVersion 2025-06-18, serverInfo tempmd-remote 1.0.0)
+    tools_list: 200 (8 tools, inputSchema present)
+    get_unsupported: 405 (GET /mcp is not served; POST only)

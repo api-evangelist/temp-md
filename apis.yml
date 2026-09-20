@@ -1,18 +1,136 @@
 aid: temp-md
 name: temp.md
-description: 'temp.md is a company surfaced via the API Evangelist harvest backlog (source: a2a-registry)
-  and added to the network as a stub for full-pipeline profiling.'
+description: >-
+  temp.md is an instant web-publishing host built for AI agents: POST an HTML, Markdown, CSV or Mermaid file (or a
+  multi-file bundle) and get a stable public URL like slug.temp.md that can be updated in place, snapshotted,
+  password-protected, commented on and restored after expiry - no account or API key required to publish. The same
+  publishing core is exposed as a REST API (OpenAPI 3.1), a hosted Streamable HTTP MCP server plus a stdio package,
+  an A2A 1.0 agent, a CLI, and an Embedded Preview Platform API for products that publish previews on behalf of
+  their own customers (delegated publish grants, signed webhooks, branded domains, review workflow).
+image: https://temp.md/opengraph-image.png
 url: https://raw.githubusercontent.com/api-evangelist/temp-md/refs/heads/main/apis.yml
 x-type: company
 x-source: harvest:a2a-registry
-x-tier: stub
-x-tier-reason: harvest
+x-tier: profiled
+x-tier-reason: 'enrichment pass 2026-09-19: full contract discovery run - two OpenAPI 3.1 specs, hosted MCP, A2A 1.0 card, llms.txt, CLI and four npm SDKs found'
 specificationVersion: '0.20'
 created: '2026-09-19'
 modified: '2026-09-19'
 tags:
+- Web Publishing
+- Static Hosting
+- AI Agents
+- MCP
+- A2A
+- Developer Tools
+- Preview Infrastructure
+- File Sharing
+- agent-native
 - Company
-apis: []
+apis:
+- name: temp.md Public API
+  description: >-
+    Publish agent-made files and applications to one canonical URL, update them atomically, and recover owner
+    credentials without changing the shared link. 23 operations across Publish (multipart create/update and the
+    idempotent, resumable publish-session protocol), Lifecycle (status, restore within 7 days of expiry, snapshot,
+    settings, permanent revoke), Comments, Accounts (signup, login, named API keys, update-token recovery), Safety
+    (abuse reports) and Agents (A2A card + JSON-RPC). Capability-token auth; anonymous publishing allowed.
+  image: https://temp.md/opengraph-image.png
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Web Publishing
+  - Static Hosting
+  - AI Agents
+  - agent-native
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-openapi.yml
+  - type: OpenAPI
+    name: provider-hosted source (verbatim copy in openapi/_original/temp-md-openapi.json)
+    url: https://temp.md/openapi.json
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: Overlay
+    url: overlays/temp-md-openapi-overlay.yaml
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+- name: temp.md Embedded Preview Platform API
+  description: >-
+    Versioned (/v1) partner API for products that create and govern previews on behalf of opaque end customers:
+    Organizations and Applications, server-only Application keys, short-lived delegated publish grants for
+    browsers, Application-scoped Preview listing/revocation, frozen review requests with signed viewer
+    capabilities and append-only decisions, signed webhook endpoints with delivery inspection, branded preview
+    domains (wildcard CNAME + TXT verification) and usage rollups. 27 operations; wrapped by @tempmd/platform.
+  image: https://temp.md/opengraph-image.png
+  humanURL: https://temp.md/integrations/
+  baseURL: https://api.temp.md/v1
+  tags:
+  - Preview Infrastructure
+  - Web Publishing
+  - Webhooks
+  - Multi-tenant
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-platform-openapi.yml
+  - type: OpenAPI
+    name: provider-hosted source (verbatim copy in openapi/_original/temp-md-platform-openapi.json)
+    url: https://temp.md/platform-openapi.json
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- name: temp.md MCP Server
+  description: >-
+    Hosted Streamable HTTP MCP server (serverInfo tempmd-remote 1.0.0, protocol 2025-06-18) exposing eight tools -
+    publish_temp, update_temp, get_temp_status, restore_temp, snapshot_temp, set_comments, list_temps,
+    recover_update_token - with anonymous publishing and an optional account API key on the connection. Inline
+    bundles up to 10 MiB / 20 files; the stdio package @tempmd/mcp covers filesystem publishing up to 50 MiB /
+    100 files. Listed in the official MCP registry as io.github.tempmd/mcp; server card at /.well-known/mcp.json.
+  image: https://temp.md/opengraph-image.png
+  humanURL: https://temp.md/docs#agents
+  baseURL: https://api.temp.md/mcp
+  tags:
+  - MCP
+  - AI Agents
+  - agent-native
+  properties:
+  - type: MCPServer
+    url: mcp/temp-md-mcp.yml
+  - type: ToolCrosswalk
+    url: mcp/temp-md-tool-crosswalk.yml
+  - type: Documentation
+    url: https://temp.md/docs#agents
+- name: temp.md A2A Publisher Agent
+  description: >-
+    A2A 1.0 agent ("temp.md Publisher") reachable over JSON-RPC at https://api.temp.md/a2a with three skills -
+    publish-temp, update-temp, inspect-temp - and SendMessage / GetTask / ListTasks / CancelTask operations.
+    Agent card served at /.well-known/agent-card.json on both temp.md and api.temp.md; anonymous publish, bearer
+    update token or account API key for task retrieval; no streaming or push notifications.
+  image: https://temp.md/opengraph-image.png
+  humanURL: https://temp.md/docs#a2a
+  baseURL: https://api.temp.md/a2a
+  tags:
+  - A2A
+  - AI Agents
+  - agent-native
+  properties:
+  - type: AgentCard
+    url: a2a/temp-md-a2a.yml
+  - type: Documentation
+    url: https://temp.md/docs#a2a
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
@@ -21,3 +139,73 @@ maintainers:
 common:
 - type: Website
   url: https://temp.md/
+- type: Documentation
+  url: https://temp.md/docs
+- type: APIReference
+  url: https://temp.md/docs#response
+- type: GettingStarted
+  url: https://temp.md/docs#overview
+- type: Pricing
+  url: https://temp.md/pricing.json
+- type: TermsOfService
+  url: https://temp.md/terms/
+- type: PrivacyPolicy
+  url: https://temp.md/privacy/
+- type: GitHubOrganization
+  url: https://github.com/tempmd
+- type: Login
+  url: https://temp.md/dashboard
+- type: Twitter
+  url: https://x.com/ship_temp_md
+- type: LLMsTxt
+  url: llms/temp-md-llms.txt
+- type: LLMsTxt
+  name: provider-hosted source
+  url: https://temp.md/llms.txt
+- type: WellKnown
+  url: well-known/temp-md-well-known.yml
+- type: AgentCard
+  url: a2a/temp-md-a2a.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: AgentSkill
+  name: provider-published Claude Code skill (verbatim from https://temp.md/skill.md)
+  url: skills/temp-md-tempmd-skill.md
+- type: MCPServer
+  url: mcp/temp-md-mcp.yml
+- type: Packages
+  url: packages/temp-md-packages.yml
+- type: SDKs
+  url: packages/temp-md-packages.yml
+- type: CLI
+  url: cli/temp-md-cli.yml
+- type: Conventions
+  url: conventions/temp-md-conventions.yml
+- type: Idempotency
+  url: conventions/temp-md-conventions.yml
+- type: ErrorCatalog
+  url: errors/temp-md-problem-types.yml
+- type: Lifecycle
+  url: lifecycle/temp-md-lifecycle.yml
+- type: Conformance
+  url: conformance/temp-md-conformance.yml
+- type: Plans
+  url: plans/temp-md-plans-pricing.yml
+- type: RateLimits
+  url: rate-limits/temp-md-rate-limits.yml
+- type: ChangeLog
+  name: absence record - provider publishes no changelog; npm release history only
+  url: changelog/temp-md-changelog.yml
+- type: Authentication
+  url: authentication/temp-md-authentication.yml
+- type: DomainSecurity
+  url: security/temp-md-domain-security.yml
+- type: AgenticAccess
+  url: agentic-access/temp-md-agentic-access.yml
+- type: NoticeAndAction
+  url: regulatory/temp-md-regulatory-posture.yml
+x-enrichment:
+  date: '2026-09-19'
+  status: enriched
+  artifacts_added: 35
+  pass: local-v3

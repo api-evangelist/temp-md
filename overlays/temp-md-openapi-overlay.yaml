@@ -1,0 +1,83 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist overlay for the temp.md Public API
+  version: 1.0.0
+extends: openapi/temp-md-openapi.yml
+x-generated: '2026-09-19'
+x-method: generated
+x-source: openapi/_original/temp-md-openapi.json + https://temp.md/docs + live response headers from api.temp.md (2026-09-19)
+x-rationale: >-
+  The published spec is clean (23 operations, all with operationIds and summaries, typed error responses) but
+  omits a few things the provider documents elsewhere or that were observed on the wire. This overlay adds them
+  WITHOUT mutating the original: externalDocs, tag descriptions and a tag for the untagged health check, the
+  X-Request-Id response header the API sends on every response, the Retry-After header's semantics, and
+  operation-level notes carried from docs/llms.txt (idempotency, atomic update, lifecycle windows). Apply with
+  any Overlay 1.0.0 processor against openapi/temp-md-openapi.yml.
+actions:
+- target: $
+  description: Add external documentation and the machine-discovery links the provider publishes.
+  update:
+    externalDocs:
+      description: temp.md developer docs (publish, update, sessions, lifecycle, limits, errors)
+      url: https://temp.md/docs
+    x-discovery:
+      llms_txt: https://temp.md/llms.txt
+      agent_manifest: https://temp.md/.well-known/agent.json
+      agent_card: https://temp.md/.well-known/agent-card.json
+      mcp_server_card: https://temp.md/.well-known/mcp.json
+      limits: https://temp.md/limits.json
+      pricing: https://temp.md/pricing.json
+- target: $.tags
+  description: Describe the six declared tags and add Health for the untagged getHealth.
+  update:
+  - name: Health
+    description: Liveness check.
+- target: $.tags[?(@.name=='Publish')]
+  update:
+    description: Create a Temp (multipart) or run the resumable, idempotent publish-session protocol.
+- target: $.tags[?(@.name=='Lifecycle')]
+  update:
+    description: Status, restore (within 7 days of expiry), snapshot, settings and permanent revocation.
+- target: $.tags[?(@.name=='Comments')]
+  update:
+    description: Append-only pinned visitor comments.
+- target: $.tags[?(@.name=='Accounts')]
+  update:
+    description: Optional accounts, named API keys (tempmd_key_) and update-token recovery.
+- target: $.tags[?(@.name=='Safety')]
+  update:
+    description: Abuse reporting; suspended content is not served while reviewed.
+- target: $.tags[?(@.name=='Agents')]
+  update:
+    description: A2A 1.0 agent card and JSON-RPC endpoint.
+- target: $.paths['/health'].get
+  update:
+    tags: [Health]
+- target: $.components.headers
+  description: Declare the correlation header observed on every response so clients can log it.
+  update:
+    X-Request-Id:
+      description: Correlation id (UUID) for support and log lookup; also returned as request_id in error bodies.
+      schema:
+        type: string
+- target: $.components.responses.RateLimited.headers.Retry-After
+  update:
+    description: Seconds to wait before retrying. The JSON body repeats it as retry_after.
+- target: $.paths['/temps'].post
+  update:
+    x-idempotency: none - a retried POST creates a second Temp; use POST /publish-sessions with Idempotency-Key for a replay-safe publish.
+    x-rate-limit: 60 per hour per IP (anonymous)
+- target: $.paths['/publish-sessions'].post
+  update:
+    x-idempotency: Idempotency-Key header required (<=128 chars); same key + same manifest returns the existing session (200), different manifest -> 409.
+- target: $.paths['/temps/{tempId}'].put
+  update:
+    x-atomic-update: A failed update never replaces the live Version; the previous Version keeps serving.
+    x-rate-limit: 120 per hour per Temp per IP
+- target: $.paths['/temps/{tempId}/restore'].post
+  update:
+    x-reversal-window: Within 7 days of expiry (limits.json restoreGraceSeconds 604800); 410 once the window closes.
+- target: $.paths['/temps/{tempId}'].delete
+  update:
+    x-irreversible: true
+    x-note: Deletes every stored Version and invalidates all capabilities; cannot be restored.

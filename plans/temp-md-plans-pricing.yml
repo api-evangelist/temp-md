@@ -1,0 +1,35 @@
+generated: '2026-09-19'
+method: probed
+source: https://temp.md/pricing.json
+checked: '2026-09-19'
+summary: >-
+  temp.md publishes a machine-readable pricing document (schemaVersion 1.0, updatedAt 2026-07-24, currency USD)
+  declaring ONE plan - Free, $0, no interval, account not required to publish - and an explicit "No paid plan is
+  currently offered." (paidPlans: []). There is no human pricing page (/pricing returns the SPA shell); the JSON
+  is linked from the agent manifest and llms.txt. Saved verbatim to plans/temp-md-pricing.json. Limits for the
+  plan are delegated to https://temp.md/limits.json (rate-limits/temp-md-rate-limits.yml).
+plan_count: 1
+prices_published: true
+currency: USD
+billing_period: null
+public_signup_pricing: true
+paid_plans: 0
+plans:
+- id: free
+  name: Free
+  availability: public
+  price: 0
+  currency: USD
+  billing_period: null
+  account_required_to_publish: false
+  included_quota: >-
+    Per limits.json: 10 MB/file, 50 MB/bundle, 100 files/bundle; 60 anonymous publishes/hour/IP, 120
+    updates/hour/Temp/IP; 7-day active window (resets on update) + 48h cooling + 7-day restore grace; claimed
+    Temps do not expire.
+  overage: null
+  features: [anonymous publishing, stable canonical URLs, in-place updates, resumable directory uploads, claims and account API keys, comments, snapshots, restore grace period]
+  limits_url: https://temp.md/limits.json
+  surfaces: [REST, CLI, stdio MCP, remote MCP, A2A, platform API]
+provider_note: 'No paid plan is currently offered.'
+platform_pricing:
+  note: The Embedded Preview Platform (Organizations/Applications) is documented and has a dashboard but no separate price is published anywhere; pricing.json does not mention it.
