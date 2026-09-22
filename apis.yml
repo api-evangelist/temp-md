@@ -80,6 +80,11 @@ apis:
   tags:
   - Preview Infrastructure
   - Web Publishing
+  - Webhook
+  - Multi-Tenant
+  tags_raw:
+  - Preview Infrastructure
+  - Web Publishing
   - Webhooks
   - Multi-tenant
   properties:
