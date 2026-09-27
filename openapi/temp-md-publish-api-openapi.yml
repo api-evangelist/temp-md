@@ -1,0 +1,628 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Publish API
+  version: 1.0.0
+  license:
+    name: API terms
+    url: https://temp.md/terms
+  termsOfService: https://temp.md/terms
+  description: 'Operations tagged Publish across 2 of this provider''s published API definitions: temp-md-openapi.json, temp-md-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+  description: Production
+tags:
+- name: Publish
+paths:
+  /temps:
+    post:
+      operationId: createTemp
+      summary: Publish a small multipart bundle
+      description: Creates an anonymous Temp. Use publish sessions for resumable or larger directory publishing.
+      tags:
+      - Publish
+      parameters:
+      - $ref: '#/components/parameters/ClientIdentity'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  contentEncoding: binary
+                  format: binary
+                  description: Main artifact, stored as index.html.
+                title:
+                  type: string
+                  maxLength: 120
+                spaMode:
+                  type: boolean
+                  default: false
+              additionalProperties:
+                type: string
+                contentEncoding: binary
+                format: binary
+                description: Additional file fields use files/<relative-path>.
+      responses:
+        '201':
+          description: Published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTempResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /temps/{tempId}:
+    put:
+      operationId: updateTemp
+      summary: Replace a Temp with a new multipart Version
+      description: The previous Version stays live unless the complete new Version succeeds.
+      tags:
+      - Publish
+      security:
+      - tempCapability: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  contentEncoding: binary
+                  format: binary
+                title:
+                  type: string
+                  maxLength: 120
+                spaMode:
+                  type: boolean
+              additionalProperties:
+                type: string
+                contentEncoding: binary
+                format: binary
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTempResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/Gone'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /publish-sessions:
+    post:
+      operationId: createPublishSession
+      summary: Create or resume an idempotent upload session
+      description: Omit tempId to create. Account authentication makes the new Temp owned immediately. Provide tempId to update with an account API key or scoped update token.
+      tags:
+      - Publish
+      security:
+      - {}
+      - accountBearer: []
+      - tempCapability: []
+      parameters:
+      - $ref: '#/components/parameters/ClientIdentity'
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePublishSessionInput'
+      responses:
+        '200':
+          description: Existing finalized session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishSession'
+        '201':
+          description: Session ready for uploads
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /publish-sessions/{sessionId}:
+    get:
+      operationId: getPublishSession
+      summary: Resume a publish session
+      tags:
+      - Publish
+      security:
+      - publishSessionToken: []
+      parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      responses:
+        '200':
+          description: Current session and file states
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishSession'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /publish-sessions/{sessionId}/files/{fileId}:
+    put:
+      operationId: uploadPublishSessionFile
+      summary: Upload one declared file
+      tags:
+      - Publish
+      security:
+      - publishSessionToken: []
+      parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              contentEncoding: binary
+              format: binary
+      responses:
+        '200':
+          description: File accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - sessionId
+                - fileId
+                - path
+                - size
+                - hash
+                properties:
+                  ok:
+                    const: true
+                  sessionId:
+                    type: string
+                  fileId:
+                    type: string
+                  path:
+                    type: string
+                  size:
+                    type: integer
+                    minimum: 0
+                  hash:
+                    type: string
+                    pattern: ^[a-f0-9]{64}$
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /publish-sessions/{sessionId}/finalize:
+    post:
+      operationId: finalizePublishSession
+      summary: Verify and atomically promote a Version
+      tags:
+      - Publish
+      security:
+      - publishSessionToken: []
+      parameters:
+      - $ref: '#/components/parameters/SessionId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      responses:
+        '200':
+          description: Version promoted; safe to retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinalizeResult'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '422':
+          $ref: '#/components/responses/BadRequest'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+components:
+  responses:
+    Gone:
+      description: Resource expired or recovery window closed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Request conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    PublishSessionFile:
+      type: object
+      required:
+      - fileId
+      - path
+      - size
+      - contentType
+      - hash
+      - status
+      - method
+      - url
+      - headers
+      properties:
+        fileId:
+          type: string
+        path:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+        hash:
+          type: string
+        status:
+          enum:
+          - expected
+          - uploaded
+        method:
+          const: PUT
+        url:
+          type: string
+          format: uri
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+    UpdateTempResult:
+      type: object
+      required:
+      - tempId
+      - versionId
+      - canonicalUrl
+      - expiresAt
+      - spaMode
+      properties:
+        tempId:
+          type: string
+        versionId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        spaMode:
+          type: boolean
+    FinalizeResult:
+      type: object
+      required:
+      - success
+      - sessionId
+      - tempId
+      - versionId
+      - canonicalUrl
+      - status
+      - expiresAt
+      properties:
+        success:
+          const: true
+        sessionId:
+          type: string
+        tempId:
+          type: string
+        versionId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        status:
+          const: ready
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        ownershipState:
+          enum:
+          - anonymous
+          - claimed
+        updateToken:
+          type: string
+          writeOnly: true
+        claimToken:
+          type: string
+          writeOnly: true
+        claimLink:
+          type: string
+          format: uri
+    PublishSession:
+      type: object
+      required:
+      - sessionId
+      - tempId
+      - versionId
+      - operation
+      - status
+      - uploadToken
+      - uploads
+      - skipped
+      - finalizeUrl
+      - statusUrl
+      - expiresAt
+      properties:
+        sessionId:
+          type: string
+        tempId:
+          type: string
+        versionId:
+          type: string
+        operation:
+          enum:
+          - create
+          - update
+        status:
+          enum:
+          - pending
+          - ready
+          - failed
+          - expired
+        uploadToken:
+          type: string
+          writeOnly: true
+        uploads:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublishSessionFile'
+        skipped:
+          type: array
+          items:
+            type: string
+        finalizeUrl:
+          type: string
+          format: uri
+        statusUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+    CreatePublishSessionInput:
+      type: object
+      required:
+      - files
+      properties:
+        files:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/UploadManifestFile'
+        tempId:
+          type: string
+        title:
+          type: string
+          maxLength: 120
+        spaMode:
+          type: boolean
+      additionalProperties: false
+    UploadManifestFile:
+      type: object
+      required:
+      - path
+      - size
+      - contentType
+      - hash
+      properties:
+        path:
+          type: string
+          minLength: 1
+          maxLength: 512
+        size:
+          type: integer
+          minimum: 0
+          maximum: 10485760
+        contentType:
+          type: string
+          minLength: 1
+          maxLength: 255
+        hash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      additionalProperties: false
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    CreateTempResult:
+      type: object
+      required:
+      - tempId
+      - canonicalUrl
+      - updateToken
+      - claimToken
+      - claimLink
+      - expiresAt
+      - hint
+      properties:
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        updateToken:
+          type: string
+          writeOnly: true
+        claimToken:
+          type: string
+          writeOnly: true
+        claimLink:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        hint:
+          type: string
+  parameters:
+    TempId:
+      name: tempId
+      in: path
+      required: true
+      schema:
+        type: string
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+    ClientIdentity:
+      name: X-Tempmd-Client
+      in: header
+      required: false
+      description: Sanitized product/version identifier for operational attribution. Never include user data or capabilities.
+      schema:
+        type: string
+        maxLength: 80
+        pattern: ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$
+  securitySchemes:
+    tempCapability:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd scoped capability
+    publishSessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_upload session capability
+    accountBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT or tempmd_key API key
+externalDocs:
+  description: temp.md documentation
+  url: https://temp.md/docs
+x-refined-from:
+- temp-md-openapi.json
+- temp-md-openapi.yml

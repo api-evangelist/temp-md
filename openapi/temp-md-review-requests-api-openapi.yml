@@ -1,0 +1,104 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Review Requests API
+  version: 0.1.0
+  description: 'Operations tagged Review Requests across 2 of this provider''s published API definitions: temp-md-platform-openapi.json, temp-md-platform-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+tags:
+- name: Review Requests
+paths:
+  /v1/review-requests/{reviewRequestId}:
+    get:
+      operationId: getReviewRequest
+      summary: Open a signed review request
+      security:
+      - reviewBearer: []
+      parameters:
+      - name: reviewRequestId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Frozen review request and decisions
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Review Requests
+    servers:
+    - url: https://api.temp.md
+  /v1/review-requests/{reviewRequestId}/decisions:
+    post:
+      operationId: createReviewDecision
+      summary: Approve or request changes on a frozen Version
+      security:
+      - reviewBearer: []
+      parameters:
+      - name: reviewRequestId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: Append-only review decision
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Review Requests
+    servers:
+    - url: https://api.temp.md
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    dashboardBearer:
+      type: http
+      scheme: bearer
+      description: A Temp.md dashboard session or personal account API key.
+    applicationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_app_<id>_<secret>
+      description: Server-only Application key with explicit scopes.
+    publishGrantBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_grant_<id>_<secret>
+      description: Short-lived, one-session delegated publishing authority.
+    reviewBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_view_<id>_<secret>
+      description: Short-lived viewer capability bound to one frozen review request.
+x-refined-from:
+- temp-md-platform-openapi.json
+- temp-md-platform-openapi.yml

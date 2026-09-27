@@ -1,0 +1,150 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Previews API
+  version: 0.1.0
+  description: 'Operations tagged Previews across 2 of this provider''s published API definitions: temp-md-platform-openapi.json, temp-md-platform-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+tags:
+- name: Previews
+paths:
+  /v1/previews:
+    get:
+      operationId: listPlatformPreviews
+      summary: List Previews belonging to the authenticated Application
+      security:
+      - applicationBearer: []
+      parameters:
+      - name: external_project_id
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      responses:
+        '200':
+          description: Application-scoped Preview list
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Previews
+    servers:
+    - url: https://api.temp.md
+  /v1/previews/{previewId}:
+    get:
+      operationId: getPlatformPreview
+      summary: Get one Application-scoped Preview and its Versions
+      security:
+      - applicationBearer: []
+      parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '200':
+          description: Preview and Version history
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Previews
+    delete:
+      operationId: revokePlatformPreview
+      summary: Revoke a Preview and delete its artifacts
+      security:
+      - applicationBearer: []
+      parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '200':
+          description: Preview revoked
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Previews
+    servers:
+    - url: https://api.temp.md
+  /v1/previews/{previewId}/review-requests:
+    get:
+      operationId: listReviewRequests
+      summary: List review requests for a Preview
+      security:
+      - applicationBearer: []
+      parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '200':
+          description: Version-bound review requests
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Previews
+    post:
+      operationId: createReviewRequest
+      summary: Freeze the current Version for signed review
+      security:
+      - applicationBearer: []
+      parameters:
+      - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '201':
+          description: Review request and one-time viewer token
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Previews
+    servers:
+    - url: https://api.temp.md
+components:
+  parameters:
+    PreviewId:
+      name: previewId
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    dashboardBearer:
+      type: http
+      scheme: bearer
+      description: A Temp.md dashboard session or personal account API key.
+    applicationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_app_<id>_<secret>
+      description: Server-only Application key with explicit scopes.
+    publishGrantBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_grant_<id>_<secret>
+      description: Short-lived, one-session delegated publishing authority.
+    reviewBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_view_<id>_<secret>
+      description: Short-lived viewer capability bound to one frozen review request.
+x-refined-from:
+- temp-md-platform-openapi.json
+- temp-md-platform-openapi.yml

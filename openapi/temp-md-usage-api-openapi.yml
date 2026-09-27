@@ -1,0 +1,85 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Usage API
+  version: 0.1.0
+  description: 'Operations tagged Usage across 2 of this provider''s published API definitions: temp-md-platform-openapi.json, temp-md-platform-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+tags:
+- name: Usage
+paths:
+  /v1/usage:
+    get:
+      operationId: getPlatformUsage
+      summary: Get Application usage rollups
+      description: Publish and storage counters are exact. View and egress fields are reserved for the edge analytics rollup.
+      security:
+      - applicationBearer: []
+      parameters:
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Daily and total usage counters
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Usage
+    servers:
+    - url: https://api.temp.md
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    dashboardBearer:
+      type: http
+      scheme: bearer
+      description: A Temp.md dashboard session or personal account API key.
+    applicationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_app_<id>_<secret>
+      description: Server-only Application key with explicit scopes.
+    publishGrantBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_grant_<id>_<secret>
+      description: Short-lived, one-session delegated publishing authority.
+    reviewBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_view_<id>_<secret>
+      description: Short-lived viewer capability bound to one frozen review request.
+x-refined-from:
+- temp-md-platform-openapi.json
+- temp-md-platform-openapi.yml

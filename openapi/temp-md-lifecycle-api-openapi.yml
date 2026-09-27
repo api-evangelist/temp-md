@@ -1,0 +1,376 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Lifecycle API
+  version: 1.0.0
+  license:
+    name: API terms
+    url: https://temp.md/terms
+  termsOfService: https://temp.md/terms
+  description: 'Operations tagged Lifecycle across 2 of this provider''s published API definitions: temp-md-openapi.json, temp-md-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+  description: Production
+tags:
+- name: Lifecycle
+paths:
+  /temps/{tempId}:
+    delete:
+      operationId: revokeTemp
+      summary: Permanently revoke a Temp and delete its artifacts
+      description: Immediately makes the public link unavailable, revokes scoped capabilities, and deletes every stored Version. If storage cleanup is temporarily unavailable, the link remains revoked while cleanup is retried in the background.
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      responses:
+        '200':
+          description: Temp revoked and artifacts deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeTempResult'
+        '202':
+          description: Temp revoked; artifact cleanup queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeTempResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /temps/{tempId}/status:
+    get:
+      operationId: getTempStatus
+      summary: Read lifecycle and access status
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      - $ref: '#/components/parameters/ClientIdentity'
+      responses:
+        '200':
+          description: Temp status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TempStatus'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /temps/{tempId}/restore:
+    post:
+      operationId: restoreTemp
+      summary: Restore an expired Temp within its restore window
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /temps/{tempId}/snapshot:
+    post:
+      operationId: snapshotTemp
+      summary: Freeze the current Version
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                  maxLength: 120
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /temps/{tempId}/settings:
+    patch:
+      operationId: updateTempCapabilitySettings
+      summary: Update Temp settings
+      tags:
+      - Lifecycle
+      security:
+      - tempCapability: []
+      - accountBearer: []
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                commentsEnabled:
+                  type: boolean
+                spaMode:
+                  type: boolean
+              minProperties: 1
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+components:
+  parameters:
+    TempId:
+      name: tempId
+      in: path
+      required: true
+      schema:
+        type: string
+    ClientIdentity:
+      name: X-Tempmd-Client
+      in: header
+      required: false
+      description: Sanitized product/version identifier for operational attribution. Never include user data or capabilities.
+      schema:
+        type: string
+        maxLength: 80
+        pattern: ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$
+  schemas:
+    TempStatus:
+      type: object
+      required:
+      - tempId
+      - canonicalUrl
+      - status
+      - ownershipState
+      - privacyMode
+      - spaMode
+      - moderationState
+      - commentsEnabled
+      - restoreEligible
+      properties:
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        status:
+          $ref: '#/components/schemas/LifecycleStatus'
+        ownershipState:
+          enum:
+          - anonymous
+          - claimed
+        privacyMode:
+          enum:
+          - unlisted
+          - password_protected
+        title:
+          type:
+          - string
+          - 'null'
+        spaMode:
+          type: boolean
+        moderationState:
+          enum:
+          - active
+          - suspended
+          - removed
+        commentsEnabled:
+          type: boolean
+        lastActivityAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        coolingStartsAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        restoreUntil:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        restoreEligible:
+          type:
+          - boolean
+          - 'null'
+    LifecycleStatus:
+      type: string
+      enum:
+      - drafting
+      - active
+      - cooling
+      - expired
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    RevokeTempResult:
+      type: object
+      required:
+      - ok
+      - tempId
+      - canonicalUrl
+      - status
+      - artifactsDeleted
+      - cleanupPending
+      properties:
+        ok:
+          const: true
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        status:
+          const: revoked
+        artifactsDeleted:
+          type: integer
+          minimum: 0
+        cleanupPending:
+          type: boolean
+        message:
+          type: string
+      additionalProperties: false
+  responses:
+    Gone:
+      description: Resource expired or recovery window closed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    SuccessObject:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    tempCapability:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd scoped capability
+    publishSessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_upload session capability
+    accountBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT or tempmd_key API key
+externalDocs:
+  description: temp.md documentation
+  url: https://temp.md/docs
+x-refined-from:
+- temp-md-openapi.json
+- temp-md-openapi.yml

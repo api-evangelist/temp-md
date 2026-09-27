@@ -25,89 +25,36 @@ tags:
 - Developer Tools
 - Preview Infrastructure
 - File Sharing
+- Agent-Native
+- Company
+tags_raw:
+- Web Publishing
+- Static Hosting
+- AI Agents
+- MCP
+- A2A
+- Developer Tools
+- Preview Infrastructure
+- File Sharing
 - agent-native
 - Company
 apis:
-- name: temp.md Public API
-  description: >-
-    Publish agent-made files and applications to one canonical URL, update them atomically, and recover owner
-    credentials without changing the shared link. 23 operations across Publish (multipart create/update and the
-    idempotent, resumable publish-session protocol), Lifecycle (status, restore within 7 days of expiry, snapshot,
-    settings, permanent revoke), Comments, Accounts (signup, login, named API keys, update-token recovery), Safety
-    (abuse reports) and Agents (A2A card + JSON-RPC). Capability-token auth; anonymous publishing allowed.
-  image: https://temp.md/opengraph-image.png
-  humanURL: https://temp.md/docs
-  baseURL: https://api.temp.md
-  tags:
-  - Web Publishing
-  - Static Hosting
-  - AI Agents
-  - agent-native
-  properties:
-  - type: OpenAPI
-    url: openapi/temp-md-openapi.yml
-  - type: OpenAPI
-    name: provider-hosted source (verbatim copy in openapi/_original/temp-md-openapi.json)
-    url: https://temp.md/openapi.json
-  - type: Documentation
-    url: https://temp.md/docs
-  - type: APIReference
-    url: https://temp.md/docs#response
-  - type: GettingStarted
-    url: https://temp.md/docs#overview
-  - type: Overlay
-    url: overlays/temp-md-openapi-overlay.yaml
-  - type: ErrorCatalog
-    url: errors/temp-md-problem-types.yml
-  - type: DataModel
-    url: data-model/temp-md-data-model.yml
-  - type: Conventions
-    url: conventions/temp-md-conventions.yml
-  - type: Idempotency
-    url: conventions/temp-md-conventions.yml
-  - type: RateLimits
-    url: rate-limits/temp-md-rate-limits.yml
-- name: temp.md Embedded Preview Platform API
-  description: >-
-    Versioned (/v1) partner API for products that create and govern previews on behalf of opaque end customers:
-    Organizations and Applications, server-only Application keys, short-lived delegated publish grants for
-    browsers, Application-scoped Preview listing/revocation, frozen review requests with signed viewer
-    capabilities and append-only decisions, signed webhook endpoints with delivery inspection, branded preview
-    domains (wildcard CNAME + TXT verification) and usage rollups. 27 operations; wrapped by @tempmd/platform.
-  image: https://temp.md/opengraph-image.png
-  humanURL: https://temp.md/integrations/
-  baseURL: https://api.temp.md/v1
-  tags:
-  - Preview Infrastructure
-  - Web Publishing
-  - Webhook
-  - Multi-Tenant
-  tags_raw:
-  - Preview Infrastructure
-  - Web Publishing
-  - Webhooks
-  - Multi-tenant
-  properties:
-  - type: OpenAPI
-    url: openapi/temp-md-platform-openapi.yml
-  - type: OpenAPI
-    name: provider-hosted source (verbatim copy in openapi/_original/temp-md-platform-openapi.json)
-    url: https://temp.md/platform-openapi.json
-  - type: Documentation
-    url: https://temp.md/docs#platform-sdk
-  - type: Webhooks
-    url: asyncapi/temp-md-webhooks.yml
 - name: temp.md MCP Server
   description: >-
-    Hosted Streamable HTTP MCP server (serverInfo tempmd-remote 1.0.0, protocol 2025-06-18) exposing eight tools -
-    publish_temp, update_temp, get_temp_status, restore_temp, snapshot_temp, set_comments, list_temps,
-    recover_update_token - with anonymous publishing and an optional account API key on the connection. Inline
-    bundles up to 10 MiB / 20 files; the stdio package @tempmd/mcp covers filesystem publishing up to 50 MiB /
-    100 files. Listed in the official MCP registry as io.github.tempmd/mcp; server card at /.well-known/mcp.json.
+    Hosted Streamable HTTP MCP server (serverInfo tempmd-remote 1.0.0, protocol 2025-06-18) exposing eight
+    tools - publish_temp, update_temp, get_temp_status, restore_temp, snapshot_temp, set_comments, list_temps,
+    recover_update_token - with anonymous publishing and an optional account API key on the connection.
+    Inline bundles up to 10 MiB / 20 files; the stdio package @tempmd/mcp covers filesystem publishing
+    up to 50 MiB / 100 files. Listed in the official MCP registry as io.github.tempmd/mcp; server card
+    at /.well-known/mcp.json.
   image: https://temp.md/opengraph-image.png
   humanURL: https://temp.md/docs#agents
   baseURL: https://api.temp.md/mcp
   tags:
+  - MCP
+  - AI Agents
+  - Agent-Native
+  tags_raw:
   - MCP
   - AI Agents
   - agent-native
@@ -120,14 +67,18 @@ apis:
     url: https://temp.md/docs#agents
 - name: temp.md A2A Publisher Agent
   description: >-
-    A2A 1.0 agent ("temp.md Publisher") reachable over JSON-RPC at https://api.temp.md/a2a with three skills -
-    publish-temp, update-temp, inspect-temp - and SendMessage / GetTask / ListTasks / CancelTask operations.
-    Agent card served at /.well-known/agent-card.json on both temp.md and api.temp.md; anonymous publish, bearer
-    update token or account API key for task retrieval; no streaming or push notifications.
+    A2A 1.0 agent ("temp.md Publisher") reachable over JSON-RPC at https://api.temp.md/a2a with three
+    skills - publish-temp, update-temp, inspect-temp - and SendMessage / GetTask / ListTasks / CancelTask
+    operations. Agent card served at /.well-known/agent-card.json on both temp.md and api.temp.md; anonymous
+    publish, bearer update token or account API key for task retrieval; no streaming or push notifications.
   image: https://temp.md/opengraph-image.png
   humanURL: https://temp.md/docs#a2a
   baseURL: https://api.temp.md/a2a
   tags:
+  - A2A
+  - AI Agents
+  - Agent-Native
+  tags_raw:
   - A2A
   - AI Agents
   - agent-native
@@ -136,12 +87,434 @@ apis:
     url: a2a/temp-md-a2a.yml
   - type: Documentation
     url: https://temp.md/docs#a2a
+- aid: temp-md:temp-md-accounts-api
+  name: temp.md Accounts API
+  description: The Accounts API from temp.md — 5 operation(s) for accounts.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Accounts
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-accounts-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-agents-api
+  name: temp.md Agents API
+  description: The Agents API from temp.md — 2 operation(s) for agents.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Agents
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-agents-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-applications-api
+  name: temp.md Applications API
+  description: The Applications API from temp.md — 9 operation(s) for applications.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Applications
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-applications-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-comments-api
+  name: temp.md Comments API
+  description: The Comments API from temp.md — 1 operation(s) for comments.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Comments
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-comments-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-health-api
+  name: temp.md Health API
+  description: The Health API from temp.md — 1 operation(s) for health.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Health
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-health-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-lifecycle-api
+  name: temp.md Lifecycle API
+  description: The Lifecycle API from temp.md — 5 operation(s) for lifecycle.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Lifecycle
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-lifecycle-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-organizations-api
+  name: temp.md Organizations API
+  description: The Organizations API from temp.md — 3 operation(s) for organizations.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Organizations
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-organizations-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-previews-api
+  name: temp.md Previews API
+  description: The Previews API from temp.md — 3 operation(s) for previews.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Previews
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-previews-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-publish-api
+  name: temp.md Publish API
+  description: The Publish API from temp.md — 6 operation(s) for publish.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Publish
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-publish-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-publish-grants-api
+  name: temp.md Publish Grants API
+  description: The Publish Grants API from temp.md — 2 operation(s) for publish grants.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Publish Grants
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-publish-grants-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-publish-sessions-api
+  name: temp.md Publish Sessions API
+  description: The Publish Sessions API from temp.md — 1 operation(s) for publish sessions.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Publish Sessions
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-publish-sessions-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-review-requests-api
+  name: temp.md Review Requests API
+  description: The Review Requests API from temp.md — 2 operation(s) for review requests.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Review Requests
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-review-requests-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-safety-api
+  name: temp.md Safety API
+  description: The Safety API from temp.md — 1 operation(s) for safety.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Safety
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-safety-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
+- aid: temp-md:temp-md-usage-api
+  name: temp.md Usage API
+  description: The Usage API from temp.md — 1 operation(s) for usage.
+  humanURL: https://temp.md/docs
+  baseURL: https://api.temp.md
+  tags:
+  - Usage
+  properties:
+  - type: OpenAPI
+    url: openapi/temp-md-usage-api-openapi.yml
+  - type: Documentation
+    url: https://temp.md/docs
+  - type: APIReference
+    url: https://temp.md/docs#response
+  - type: GettingStarted
+    url: https://temp.md/docs#overview
+  - type: ErrorCatalog
+    url: errors/temp-md-problem-types.yml
+  - type: DataModel
+    url: data-model/temp-md-data-model.yml
+  - type: Conventions
+    url: conventions/temp-md-conventions.yml
+  - type: Idempotency
+    url: conventions/temp-md-conventions.yml
+  - type: RateLimits
+    url: rate-limits/temp-md-rate-limits.yml
+  - type: Documentation
+    url: https://temp.md/docs#platform-sdk
+  - type: Webhooks
+    url: asyncapi/temp-md-webhooks.yml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: Overlay
+  url: overlays/temp-md-openapi-overlay.yaml
 - type: Website
   url: https://temp.md/
 - type: Documentation
@@ -214,3 +587,10 @@ x-enrichment:
   status: enriched
   artifacts_added: 35
   pass: local-v3
+x-a2a:
+  verified: true
+  probed: '2026-09-26'
+  url: "https://temp.md/.well-known/agent-card.json"
+  grade: "flavored"
+  protocol_version: "1.0"
+  control: 200

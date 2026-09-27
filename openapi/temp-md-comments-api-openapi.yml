@@ -1,0 +1,169 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Comments API
+  version: 1.0.0
+  license:
+    name: API terms
+    url: https://temp.md/terms
+  termsOfService: https://temp.md/terms
+  description: 'Operations tagged Comments across 2 of this provider''s published API definitions: temp-md-openapi.json, temp-md-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+  description: Production
+tags:
+- name: Comments
+paths:
+  /temps/{tempId}/comments:
+    get:
+      operationId: listTempComments
+      summary: List visible comments
+      tags:
+      - Comments
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      responses:
+        '200':
+          description: Visible comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: appendTempComments
+      summary: Append validated visitor comments
+      tags:
+      - Comments
+      parameters:
+      - $ref: '#/components/parameters/TempId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              maxItems: 200
+              items:
+                type: object
+                required:
+                - id
+                properties:
+                  id:
+                    type: string
+                    minLength: 1
+                    maxLength: 128
+                    pattern: ^[A-Za-z0-9._:-]+$
+                additionalProperties: true
+      responses:
+        '200':
+          $ref: '#/components/responses/SuccessObject'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+components:
+  parameters:
+    TempId:
+      name: tempId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    SuccessObject:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+  securitySchemes:
+    tempCapability:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd scoped capability
+    publishSessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_upload session capability
+    accountBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT or tempmd_key API key
+externalDocs:
+  description: temp.md documentation
+  url: https://temp.md/docs
+x-refined-from:
+- temp-md-openapi.json
+- temp-md-openapi.yml

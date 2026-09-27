@@ -1,0 +1,177 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Agents API
+  version: 1.0.0
+  license:
+    name: API terms
+    url: https://temp.md/terms
+  termsOfService: https://temp.md/terms
+  description: 'Operations tagged Agents across 2 of this provider''s published API definitions: temp-md-openapi.json, temp-md-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+  description: Production
+tags:
+- name: Agents
+paths:
+  /.well-known/agent-card.json:
+    get:
+      operationId: getA2AAgentCard
+      summary: Discover the A2A 1.0 agent
+      tags:
+      - Agents
+      responses:
+        '200':
+          description: A2A Agent Card
+          content:
+            application/a2a+json:
+              schema:
+                type: object
+                required:
+                - name
+                - supportedInterfaces
+                - version
+                - skills
+                additionalProperties: true
+    servers:
+    - url: https://api.temp.md
+      description: Production
+  /a2a:
+    post:
+      operationId: sendA2AJsonRpc
+      summary: Send an A2A 1.0 JSON-RPC request
+      description: Supports SendMessage, GetTask, ListTasks, and CancelTask. Publish and update operations accept the same 20-file, 10 MiB inline bundle shape as remote MCP.
+      tags:
+      - Agents
+      parameters:
+      - name: A2A-Version
+        in: header
+        required: false
+        schema:
+          const: '1.0'
+          default: '1.0'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JsonRpcRequest'
+          application/a2a+json:
+            schema:
+              $ref: '#/components/schemas/JsonRpcRequest'
+      responses:
+        '200':
+          description: A2A JSON-RPC response
+          content:
+            application/a2a+json:
+              schema:
+                $ref: '#/components/schemas/JsonRpcResponse'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '415':
+          $ref: '#/components/responses/BadRequest'
+    servers:
+    - url: https://api.temp.md
+      description: Production
+components:
+  schemas:
+    JsonRpcResponse:
+      type: object
+      required:
+      - jsonrpc
+      - id
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id:
+          type:
+          - string
+          - integer
+          - 'null'
+        result: {}
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              type: integer
+            message:
+              type: string
+            data: {}
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    JsonRpcRequest:
+      type: object
+      required:
+      - jsonrpc
+      - method
+      - params
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id:
+          type:
+          - string
+          - integer
+          - 'null'
+        method:
+          enum:
+          - SendMessage
+          - GetTask
+          - ListTasks
+          - CancelTask
+        params:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    tempCapability:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd scoped capability
+    publishSessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_upload session capability
+    accountBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT or tempmd_key API key
+externalDocs:
+  description: temp.md documentation
+  url: https://temp.md/docs
+x-refined-from:
+- temp-md-openapi.json
+- temp-md-openapi.yml

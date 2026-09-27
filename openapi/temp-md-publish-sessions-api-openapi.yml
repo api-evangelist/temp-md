@@ -1,0 +1,88 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Publish Sessions API
+  version: 0.1.0
+  description: 'Operations tagged Publish Sessions across 2 of this provider''s published API definitions: temp-md-platform-openapi.json, temp-md-platform-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+tags:
+- name: Publish Sessions
+paths:
+  /v1/publish-sessions:
+    post:
+      operationId: createPlatformPublishSession
+      summary: Create or update a Preview through the resumable protocol
+      description: Server requests may use an Application key. Requests with an Origin header must use a publish grant. Upload and finalize URLs returned by this operation use a narrower upload capability.
+      security:
+      - applicationBearer: []
+      - publishGrantBearer: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          maxLength: 128
+      responses:
+        '201':
+          description: Publish session and scoped upload targets
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Publish Sessions
+    servers:
+    - url: https://api.temp.md
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    dashboardBearer:
+      type: http
+      scheme: bearer
+      description: A Temp.md dashboard session or personal account API key.
+    applicationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_app_<id>_<secret>
+      description: Server-only Application key with explicit scopes.
+    publishGrantBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_grant_<id>_<secret>
+      description: Short-lived, one-session delegated publishing authority.
+    reviewBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_view_<id>_<secret>
+      description: Short-lived viewer capability bound to one frozen review request.
+x-refined-from:
+- temp-md-platform-openapi.json
+- temp-md-platform-openapi.yml

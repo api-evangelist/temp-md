@@ -1,0 +1,319 @@
+openapi: 3.2.0
+info:
+  title: Temp Md Applications API
+  version: 0.1.0
+  description: 'Operations tagged Applications across 2 of this provider''s published API definitions: temp-md-platform-openapi.json, temp-md-platform-openapi.yml. Each path carries the servers of the definition it was published in.'
+servers:
+- url: https://api.temp.md
+tags:
+- name: Applications
+paths:
+  /v1/applications/{applicationId}:
+    get:
+      operationId: getApplication
+      summary: Get an Application
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Application
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    patch:
+      operationId: updateApplication
+      summary: Update an Application
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Updated Application
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+  /v1/applications/{applicationId}/keys:
+    get:
+      operationId: listApplicationKeys
+      summary: List redacted Application keys
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Application keys without raw secrets
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    post:
+      operationId: createApplicationKey
+      summary: Create a one-time-reveal Application key
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '201':
+          description: Application key and one-time raw token
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+  /v1/applications/{applicationId}/keys/{keyId}:
+    delete:
+      operationId: revokeApplicationKey
+      summary: Revoke an Application key immediately
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      - name: keyId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Key revoked
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+  /v1/applications/{applicationId}/webhooks:
+    get:
+      operationId: listWebhookEndpoints
+      summary: List webhook endpoints
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Webhook endpoints without signing secrets
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    post:
+      operationId: createWebhookEndpoint
+      summary: Create a signed webhook endpoint
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '201':
+          description: Endpoint and one-time signing secret
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+  /v1/applications/{applicationId}/webhooks/{endpointId}:
+    delete:
+      operationId: disableWebhookEndpoint
+      summary: Disable a webhook endpoint
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      - name: endpointId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Endpoint disabled
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+  /v1/applications/{applicationId}/webhook-deliveries:
+    get:
+      operationId: listWebhookDeliveries
+      summary: Inspect recent webhook delivery attempts
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Recent webhook deliveries
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+  /v1/applications/{applicationId}/domains:
+    get:
+      operationId: listDomainBindings
+      summary: List branded preview namespaces
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      responses:
+        '200':
+          description: Domain bindings and DNS instructions
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    post:
+      operationId: createDomainBinding
+      summary: Register a branded preview namespace
+      description: Returns wildcard CNAME and ownership TXT records. Preview certificates are provisioned individually after verification.
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - hostnameSuffix
+              properties:
+                hostnameSuffix:
+                  type: string
+                  example: preview.example.com
+      responses:
+        '201':
+          description: Pending domain binding and DNS records
+        '400':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+  /v1/applications/{applicationId}/domains/{domainId}/verify:
+    post:
+      operationId: verifyDomainBinding
+      summary: Verify wildcard CNAME and ownership TXT records
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      - name: domainId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Current DNS verification state
+        '404':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+  /v1/applications/{applicationId}/domains/{domainId}:
+    delete:
+      operationId: disableDomainBinding
+      summary: Disable a branded namespace and deprovision hostnames
+      security:
+      - dashboardBearer: []
+      parameters:
+      - $ref: '#/components/parameters/ApplicationId'
+      - name: domainId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Domain binding disabled
+        '404':
+          $ref: '#/components/responses/Error'
+      tags:
+      - Applications
+    servers:
+    - url: https://api.temp.md
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      schema:
+        type: string
+  securitySchemes:
+    dashboardBearer:
+      type: http
+      scheme: bearer
+      description: A Temp.md dashboard session or personal account API key.
+    applicationBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_app_<id>_<secret>
+      description: Server-only Application key with explicit scopes.
+    publishGrantBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_grant_<id>_<secret>
+      description: Short-lived, one-session delegated publishing authority.
+    reviewBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: tempmd_view_<id>_<secret>
+      description: Short-lived viewer capability bound to one frozen review request.
+x-refined-from:
+- temp-md-platform-openapi.json
+- temp-md-platform-openapi.yml
