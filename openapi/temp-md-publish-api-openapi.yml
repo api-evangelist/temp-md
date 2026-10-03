@@ -1,12 +1,12 @@
 openapi: 3.2.0
 info:
-  title: Temp Md Publish API
+  title: temp.md Public Publish API
   version: 1.0.0
+  description: Publish agent-made files and applications to one canonical URL, update them atomically, and recover owner credentials without changing the shared link.
+  termsOfService: https://temp.md/terms
   license:
     name: API terms
     url: https://temp.md/terms
-  termsOfService: https://temp.md/terms
-  description: 'Operations tagged Publish across 2 of this provider''s published API definitions: temp-md-openapi.json, temp-md-openapi.yml. Each path carries the servers of the definition it was published in.'
 servers:
 - url: https://api.temp.md
   description: Production
@@ -60,9 +60,6 @@ paths:
           $ref: '#/components/responses/TooLarge'
         '429':
           $ref: '#/components/responses/RateLimited'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /temps/{tempId}:
     put:
       operationId: updateTemp
@@ -112,9 +109,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '410':
           $ref: '#/components/responses/Gone'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /publish-sessions:
     post:
       operationId: createPublishSession
@@ -165,9 +159,6 @@ paths:
           $ref: '#/components/responses/TooLarge'
         '429':
           $ref: '#/components/responses/RateLimited'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /publish-sessions/{sessionId}:
     get:
       operationId: getPublishSession
@@ -190,9 +181,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /publish-sessions/{sessionId}/files/{fileId}:
     put:
       operationId: uploadPublishSessionFile
@@ -256,9 +244,6 @@ paths:
           $ref: '#/components/responses/Gone'
         '413':
           $ref: '#/components/responses/TooLarge'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /publish-sessions/{sessionId}/finalize:
     post:
       operationId: finalizePublishSession
@@ -283,122 +268,8 @@ paths:
           $ref: '#/components/responses/Gone'
         '422':
           $ref: '#/components/responses/BadRequest'
-    servers:
-    - url: https://api.temp.md
-      description: Production
 components:
-  responses:
-    Gone:
-      description: Resource expired or recovery window closed
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    RateLimited:
-      description: Rate limit exceeded
-      headers:
-        Retry-After:
-          schema:
-            type: integer
-            minimum: 0
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Forbidden:
-      description: Credential lacks access
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Unauthorized:
-      description: Authentication required or invalid
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    BadRequest:
-      description: Invalid request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Conflict:
-      description: Request conflicts with current state
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    TooLarge:
-      description: Request or bundle exceeds an enforced limit
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
   schemas:
-    PublishSessionFile:
-      type: object
-      required:
-      - fileId
-      - path
-      - size
-      - contentType
-      - hash
-      - status
-      - method
-      - url
-      - headers
-      properties:
-        fileId:
-          type: string
-        path:
-          type: string
-        size:
-          type: integer
-        contentType:
-          type: string
-        hash:
-          type: string
-        status:
-          enum:
-          - expected
-          - uploaded
-        method:
-          const: PUT
-        url:
-          type: string
-          format: uri
-        headers:
-          type: object
-          additionalProperties:
-            type: string
-    UpdateTempResult:
-      type: object
-      required:
-      - tempId
-      - versionId
-      - canonicalUrl
-      - expiresAt
-      - spaMode
-      properties:
-        tempId:
-          type: string
-        versionId:
-          type: string
-        canonicalUrl:
-          type: string
-          format: uri
-        expiresAt:
-          type: string
-          format: date-time
-        spaMode:
-          type: boolean
     FinalizeResult:
       type: object
       required:
@@ -492,6 +363,113 @@ components:
         expiresAt:
           type: string
           format: date-time
+    CreateTempResult:
+      type: object
+      required:
+      - tempId
+      - canonicalUrl
+      - updateToken
+      - claimToken
+      - claimLink
+      - expiresAt
+      - hint
+      properties:
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        updateToken:
+          type: string
+          writeOnly: true
+        claimToken:
+          type: string
+          writeOnly: true
+        claimLink:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        hint:
+          type: string
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    PublishSessionFile:
+      type: object
+      required:
+      - fileId
+      - path
+      - size
+      - contentType
+      - hash
+      - status
+      - method
+      - url
+      - headers
+      properties:
+        fileId:
+          type: string
+        path:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+        hash:
+          type: string
+        status:
+          enum:
+          - expected
+          - uploaded
+        method:
+          const: PUT
+        url:
+          type: string
+          format: uri
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+    UpdateTempResult:
+      type: object
+      required:
+      - tempId
+      - versionId
+      - canonicalUrl
+      - expiresAt
+      - spaMode
+      properties:
+        tempId:
+          type: string
+        versionId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        spaMode:
+          type: boolean
     CreatePublishSessionInput:
       type: object
       required:
@@ -535,65 +513,9 @@ components:
           type: string
           pattern: ^[a-f0-9]{64}$
       additionalProperties: false
-    Error:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-        request_id:
-          type: string
-        docs_url:
-          type: string
-          format: uri
-        retry_after:
-          type: integer
-          minimum: 0
-      additionalProperties: true
-    CreateTempResult:
-      type: object
-      required:
-      - tempId
-      - canonicalUrl
-      - updateToken
-      - claimToken
-      - claimLink
-      - expiresAt
-      - hint
-      properties:
-        tempId:
-          type: string
-        canonicalUrl:
-          type: string
-          format: uri
-        updateToken:
-          type: string
-          writeOnly: true
-        claimToken:
-          type: string
-          writeOnly: true
-        claimLink:
-          type: string
-          format: uri
-        expiresAt:
-          type: string
-          format: date-time
-        hint:
-          type: string
   parameters:
     TempId:
       name: tempId
-      in: path
-      required: true
-      schema:
-        type: string
-    SessionId:
-      name: sessionId
       in: path
       required: true
       schema:
@@ -607,6 +529,66 @@ components:
         type: string
         maxLength: 80
         pattern: ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Request conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Gone:
+      description: Resource expired or recovery window closed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   securitySchemes:
     tempCapability:
       type: http
@@ -623,6 +605,3 @@ components:
 externalDocs:
   description: temp.md documentation
   url: https://temp.md/docs
-x-refined-from:
-- temp-md-openapi.json
-- temp-md-openapi.yml

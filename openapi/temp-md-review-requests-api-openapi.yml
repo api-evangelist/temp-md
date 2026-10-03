@@ -1,8 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Temp Md Review Requests API
+  title: Temp.md Embedded Preview Platform Review Requests API
   version: 0.1.0
-  description: 'Operations tagged Review Requests across 2 of this provider''s published API definitions: temp-md-platform-openapi.json, temp-md-platform-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: Versioned partner API for creating and governing previews on behalf of opaque end customers. Application keys are server credentials; browser publishers must use short-lived publish grants.
 servers:
 - url: https://api.temp.md
 tags:
@@ -29,8 +29,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Review Requests
-    servers:
-    - url: https://api.temp.md
   /v1/review-requests/{reviewRequestId}/decisions:
     post:
       operationId: createReviewDecision
@@ -54,9 +52,14 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Review Requests
-    servers:
-    - url: https://api.temp.md
 components:
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       type: object
@@ -72,13 +75,6 @@ components:
           type: string
         request_id:
           type: string
-  responses:
-    Error:
-      description: Structured error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
   securitySchemes:
     dashboardBearer:
       type: http
@@ -99,6 +95,3 @@ components:
       scheme: bearer
       bearerFormat: tempmd_view_<id>_<secret>
       description: Short-lived viewer capability bound to one frozen review request.
-x-refined-from:
-- temp-md-platform-openapi.json
-- temp-md-platform-openapi.yml

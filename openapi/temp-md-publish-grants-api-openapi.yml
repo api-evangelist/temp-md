@@ -1,8 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Temp Md Publish Grants API
+  title: Temp.md Embedded Preview Platform Publish Grants API
   version: 0.1.0
-  description: 'Operations tagged Publish Grants across 2 of this provider''s published API definitions: temp-md-platform-openapi.json, temp-md-platform-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: Versioned partner API for creating and governing previews on behalf of opaque end customers. Application keys are server credentials; browser publishers must use short-lived publish grants.
 servers:
 - url: https://api.temp.md
 tags:
@@ -34,8 +34,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Publish Grants
-    servers:
-    - url: https://api.temp.md
   /v1/publish-grants/{grantId}:
     delete:
       operationId: revokePublishGrant
@@ -55,24 +53,15 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Publish Grants
-    servers:
-    - url: https://api.temp.md
 components:
-  schemas:
+  responses:
     Error:
-      type: object
-      required:
-      - error
-      - code
-      properties:
-        error:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-        request_id:
-          type: string
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
     CreatePublishGrant:
       type: object
       required:
@@ -106,13 +95,20 @@ components:
           type: integer
           minimum: 1
           maximum: 52428800
-  responses:
     Error:
-      description: Structured error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+      type: object
+      required:
+      - error
+      - code
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
   securitySchemes:
     dashboardBearer:
       type: http
@@ -133,6 +129,3 @@ components:
       scheme: bearer
       bearerFormat: tempmd_view_<id>_<secret>
       description: Short-lived viewer capability bound to one frozen review request.
-x-refined-from:
-- temp-md-platform-openapi.json
-- temp-md-platform-openapi.yml

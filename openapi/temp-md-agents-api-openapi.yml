@@ -1,12 +1,12 @@
 openapi: 3.2.0
 info:
-  title: Temp Md Agents API
+  title: temp.md Public Agents API
   version: 1.0.0
+  description: Publish agent-made files and applications to one canonical URL, update them atomically, and recover owner credentials without changing the shared link.
+  termsOfService: https://temp.md/terms
   license:
     name: API terms
     url: https://temp.md/terms
-  termsOfService: https://temp.md/terms
-  description: 'Operations tagged Agents across 2 of this provider''s published API definitions: temp-md-openapi.json, temp-md-openapi.yml. Each path carries the servers of the definition it was published in.'
 servers:
 - url: https://api.temp.md
   description: Production
@@ -32,9 +32,6 @@ paths:
                 - version
                 - skills
                 additionalProperties: true
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /a2a:
     post:
       operationId: sendA2AJsonRpc
@@ -69,11 +66,52 @@ paths:
           $ref: '#/components/responses/TooLarge'
         '415':
           $ref: '#/components/responses/BadRequest'
-    servers:
-    - url: https://api.temp.md
-      description: Production
 components:
   schemas:
+    JsonRpcRequest:
+      type: object
+      required:
+      - jsonrpc
+      - method
+      - params
+      properties:
+        jsonrpc:
+          const: '2.0'
+        id:
+          type:
+          - string
+          - integer
+          - 'null'
+        method:
+          enum:
+          - SendMessage
+          - GetTask
+          - ListTasks
+          - CancelTask
+        params:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
     JsonRpcResponse:
       type: object
       required:
@@ -99,59 +137,15 @@ components:
             message:
               type: string
             data: {}
-    Error:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-        request_id:
-          type: string
-        docs_url:
-          type: string
-          format: uri
-        retry_after:
-          type: integer
-          minimum: 0
-      additionalProperties: true
-    JsonRpcRequest:
-      type: object
-      required:
-      - jsonrpc
-      - method
-      - params
-      properties:
-        jsonrpc:
-          const: '2.0'
-        id:
-          type:
-          - string
-          - integer
-          - 'null'
-        method:
-          enum:
-          - SendMessage
-          - GetTask
-          - ListTasks
-          - CancelTask
-        params:
-          type: object
-          additionalProperties: true
-      additionalProperties: false
   responses:
-    BadRequest:
-      description: Invalid request
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    TooLarge:
-      description: Request or bundle exceeds an enforced limit
+    BadRequest:
+      description: Invalid request
       content:
         application/json:
           schema:
@@ -172,6 +166,3 @@ components:
 externalDocs:
   description: temp.md documentation
   url: https://temp.md/docs
-x-refined-from:
-- temp-md-openapi.json
-- temp-md-openapi.yml

@@ -1,12 +1,12 @@
 openapi: 3.2.0
 info:
-  title: Temp Md Lifecycle API
+  title: temp.md Public Lifecycle API
   version: 1.0.0
+  description: Publish agent-made files and applications to one canonical URL, update them atomically, and recover owner credentials without changing the shared link.
+  termsOfService: https://temp.md/terms
   license:
     name: API terms
     url: https://temp.md/terms
-  termsOfService: https://temp.md/terms
-  description: 'Operations tagged Lifecycle across 2 of this provider''s published API definitions: temp-md-openapi.json, temp-md-openapi.yml. Each path carries the servers of the definition it was published in.'
 servers:
 - url: https://api.temp.md
   description: Production
@@ -47,9 +47,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /temps/{tempId}/status:
     get:
       operationId: getTempStatus
@@ -73,9 +70,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /temps/{tempId}/restore:
     post:
       operationId: restoreTemp
@@ -98,9 +92,6 @@ paths:
           $ref: '#/components/responses/Gone'
         '429':
           $ref: '#/components/responses/RateLimited'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /temps/{tempId}/snapshot:
     post:
       operationId: snapshotTemp
@@ -132,9 +123,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
-    servers:
-    - url: https://api.temp.md
-      description: Production
   /temps/{tempId}/settings:
     patch:
       operationId: updateTempCapabilitySettings
@@ -166,27 +154,84 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '403':
           $ref: '#/components/responses/Forbidden'
-    servers:
-    - url: https://api.temp.md
-      description: Production
 components:
-  parameters:
-    TempId:
-      name: tempId
-      in: path
-      required: true
-      schema:
-        type: string
-    ClientIdentity:
-      name: X-Tempmd-Client
-      in: header
-      required: false
-      description: Sanitized product/version identifier for operational attribution. Never include user data or capabilities.
-      schema:
-        type: string
-        maxLength: 80
-        pattern: ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$
+  responses:
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Gone:
+      description: Resource expired or recovery window closed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    SuccessObject:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
+    RevokeTempResult:
+      type: object
+      required:
+      - ok
+      - tempId
+      - canonicalUrl
+      - status
+      - artifactsDeleted
+      - cleanupPending
+      properties:
+        ok:
+          const: true
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        status:
+          const: revoked
+        artifactsDeleted:
+          type: integer
+          minimum: 0
+        cleanupPending:
+          type: boolean
+        message:
+          type: string
+      additionalProperties: false
     TempStatus:
       type: object
       required:
@@ -279,82 +324,22 @@ components:
           type: integer
           minimum: 0
       additionalProperties: true
-    RevokeTempResult:
-      type: object
-      required:
-      - ok
-      - tempId
-      - canonicalUrl
-      - status
-      - artifactsDeleted
-      - cleanupPending
-      properties:
-        ok:
-          const: true
-        tempId:
-          type: string
-        canonicalUrl:
-          type: string
-          format: uri
-        status:
-          const: revoked
-        artifactsDeleted:
-          type: integer
-          minimum: 0
-        cleanupPending:
-          type: boolean
-        message:
-          type: string
-      additionalProperties: false
-  responses:
-    Gone:
-      description: Resource expired or recovery window closed
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    RateLimited:
-      description: Rate limit exceeded
-      headers:
-        Retry-After:
-          schema:
-            type: integer
-            minimum: 0
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Forbidden:
-      description: Credential lacks access
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    BadRequest:
-      description: Invalid request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    SuccessObject:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-            additionalProperties: true
-    Unauthorized:
-      description: Authentication required or invalid
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+  parameters:
+    TempId:
+      name: tempId
+      in: path
+      required: true
+      schema:
+        type: string
+    ClientIdentity:
+      name: X-Tempmd-Client
+      in: header
+      required: false
+      description: Sanitized product/version identifier for operational attribution. Never include user data or capabilities.
+      schema:
+        type: string
+        maxLength: 80
+        pattern: ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$
   securitySchemes:
     tempCapability:
       type: http
@@ -371,6 +356,3 @@ components:
 externalDocs:
   description: temp.md documentation
   url: https://temp.md/docs
-x-refined-from:
-- temp-md-openapi.json
-- temp-md-openapi.yml

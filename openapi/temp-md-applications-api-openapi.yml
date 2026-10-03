@@ -1,8 +1,8 @@
 openapi: 3.2.0
 info:
-  title: Temp Md Applications API
+  title: Temp.md Embedded Preview Platform Applications API
   version: 0.1.0
-  description: 'Operations tagged Applications across 2 of this provider''s published API definitions: temp-md-platform-openapi.json, temp-md-platform-openapi.yml. Each path carries the servers of the definition it was published in.'
+  description: Versioned partner API for creating and governing previews on behalf of opaque end customers. Application keys are server credentials; browser publishers must use short-lived publish grants.
 servers:
 - url: https://api.temp.md
 tags:
@@ -39,8 +39,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
   /v1/applications/{applicationId}/keys:
     get:
       operationId: listApplicationKeys
@@ -74,8 +72,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
   /v1/applications/{applicationId}/keys/{keyId}:
     delete:
       operationId: revokeApplicationKey
@@ -96,8 +92,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
   /v1/applications/{applicationId}/webhooks:
     get:
       operationId: listWebhookEndpoints
@@ -129,8 +123,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
   /v1/applications/{applicationId}/webhooks/{endpointId}:
     delete:
       operationId: disableWebhookEndpoint
@@ -151,8 +143,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
   /v1/applications/{applicationId}/webhook-deliveries:
     get:
       operationId: listWebhookDeliveries
@@ -168,8 +158,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
   /v1/applications/{applicationId}/domains:
     get:
       operationId: listDomainBindings
@@ -216,8 +204,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
   /v1/applications/{applicationId}/domains/{domainId}/verify:
     post:
       operationId: verifyDomainBinding
@@ -240,8 +226,6 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
   /v1/applications/{applicationId}/domains/{domainId}:
     delete:
       operationId: disableDomainBinding
@@ -262,9 +246,21 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
       - Applications
-    servers:
-    - url: https://api.temp.md
 components:
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     Error:
       type: object
@@ -280,20 +276,6 @@ components:
           type: string
         request_id:
           type: string
-  responses:
-    Error:
-      description: Structured error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-  parameters:
-    ApplicationId:
-      name: applicationId
-      in: path
-      required: true
-      schema:
-        type: string
   securitySchemes:
     dashboardBearer:
       type: http
@@ -314,6 +296,3 @@ components:
       scheme: bearer
       bearerFormat: tempmd_view_<id>_<secret>
       description: Short-lived viewer capability bound to one frozen review request.
-x-refined-from:
-- temp-md-platform-openapi.json
-- temp-md-platform-openapi.yml

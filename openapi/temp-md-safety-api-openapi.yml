@@ -1,12 +1,12 @@
 openapi: 3.2.0
 info:
-  title: Temp Md Safety API
+  title: temp.md Public Safety API
   version: 1.0.0
+  description: Publish agent-made files and applications to one canonical URL, update them atomically, and recover owner credentials without changing the shared link.
+  termsOfService: https://temp.md/terms
   license:
     name: API terms
     url: https://temp.md/terms
-  termsOfService: https://temp.md/terms
-  description: 'Operations tagged Safety across 2 of this provider''s published API definitions: temp-md-openapi.json, temp-md-openapi.yml. Each path carries the servers of the definition it was published in.'
 servers:
 - url: https://api.temp.md
   description: Production
@@ -57,9 +57,6 @@ paths:
           $ref: '#/components/responses/TooLarge'
         '429':
           $ref: '#/components/responses/RateLimited'
-    servers:
-    - url: https://api.temp.md
-      description: Production
 components:
   responses:
     RateLimited:
@@ -69,6 +66,12 @@ components:
           schema:
             type: integer
             minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
       content:
         application/json:
           schema:
@@ -86,12 +89,6 @@ components:
           schema:
             type: object
             additionalProperties: true
-    TooLarge:
-      description: Request or bundle exceeds an enforced limit
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       type: object
@@ -129,6 +126,3 @@ components:
 externalDocs:
   description: temp.md documentation
   url: https://temp.md/docs
-x-refined-from:
-- temp-md-openapi.json
-- temp-md-openapi.yml
