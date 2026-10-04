@@ -59,6 +59,12 @@ paths:
           $ref: '#/components/responses/RateLimited'
 components:
   responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     RateLimited:
       description: Rate limit exceeded
       headers:
@@ -70,18 +76,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    TooLarge:
-      description: Request or bundle exceeds an enforced limit
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    BadRequest:
-      description: Invalid request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
     SuccessObject:
       description: Successful response
       content:
@@ -89,6 +83,12 @@ components:
           schema:
             type: object
             additionalProperties: true
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       type: object

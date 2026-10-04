@@ -156,6 +156,12 @@ paths:
           $ref: '#/components/responses/Forbidden'
 components:
   responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     RateLimited:
       description: Rate limit exceeded
       headers:
@@ -167,12 +173,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    BadRequest:
-      description: Invalid request
+    SuccessObject:
+      description: Successful response
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            type: object
+            additionalProperties: true
     Gone:
       description: Resource expired or recovery window closed
       content:
@@ -185,26 +192,39 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    Forbidden:
-      description: Credential lacks access
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    SuccessObject:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-            additionalProperties: true
     Unauthorized:
       description: Authentication required or invalid
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
     RevokeTempResult:
       type: object
       required:
@@ -232,6 +252,13 @@ components:
         message:
           type: string
       additionalProperties: false
+    LifecycleStatus:
+      type: string
+      enum:
+      - drafting
+      - active
+      - cooling
+      - expired
     TempStatus:
       type: object
       required:
@@ -297,40 +324,7 @@ components:
           type:
           - boolean
           - 'null'
-    LifecycleStatus:
-      type: string
-      enum:
-      - drafting
-      - active
-      - cooling
-      - expired
-    Error:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-        request_id:
-          type: string
-        docs_url:
-          type: string
-          format: uri
-        retry_after:
-          type: integer
-          minimum: 0
-      additionalProperties: true
   parameters:
-    TempId:
-      name: tempId
-      in: path
-      required: true
-      schema:
-        type: string
     ClientIdentity:
       name: X-Tempmd-Client
       in: header
@@ -340,6 +334,12 @@ components:
         type: string
         maxLength: 80
         pattern: ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$
+    TempId:
+      name: tempId
+      in: path
+      required: true
+      schema:
+        type: string
   securitySchemes:
     tempCapability:
       type: http

@@ -269,49 +269,104 @@ paths:
         '422':
           $ref: '#/components/responses/BadRequest'
 components:
+  responses:
+    Gone:
+      description: Resource expired or recovery window closed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Request conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 0
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
-    FinalizeResult:
+    CreatePublishSessionInput:
       type: object
       required:
-      - success
-      - sessionId
-      - tempId
-      - versionId
-      - canonicalUrl
-      - status
-      - expiresAt
+      - files
       properties:
-        success:
-          const: true
-        sessionId:
-          type: string
+        files:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/UploadManifestFile'
         tempId:
           type: string
-        versionId:
+        title:
           type: string
-        canonicalUrl:
+          maxLength: 120
+        spaMode:
+          type: boolean
+      additionalProperties: false
+    UploadManifestFile:
+      type: object
+      required:
+      - path
+      - size
+      - contentType
+      - hash
+      properties:
+        path:
           type: string
-          format: uri
-        status:
-          const: ready
-        expiresAt:
-          type:
-          - string
-          - 'null'
-          format: date-time
-        ownershipState:
-          enum:
-          - anonymous
-          - claimed
-        updateToken:
+          minLength: 1
+          maxLength: 512
+        size:
+          type: integer
+          minimum: 0
+          maximum: 10485760
+        contentType:
           type: string
-          writeOnly: true
-        claimToken:
+          minLength: 1
+          maxLength: 255
+        hash:
           type: string
-          writeOnly: true
-        claimLink:
-          type: string
-          format: uri
+          pattern: ^[a-f0-9]{64}$
+      additionalProperties: false
     PublishSession:
       type: object
       required:
@@ -363,36 +418,6 @@ components:
         expiresAt:
           type: string
           format: date-time
-    CreateTempResult:
-      type: object
-      required:
-      - tempId
-      - canonicalUrl
-      - updateToken
-      - claimToken
-      - claimLink
-      - expiresAt
-      - hint
-      properties:
-        tempId:
-          type: string
-        canonicalUrl:
-          type: string
-          format: uri
-        updateToken:
-          type: string
-          writeOnly: true
-        claimToken:
-          type: string
-          writeOnly: true
-        claimLink:
-          type: string
-          format: uri
-        expiresAt:
-          type: string
-          format: date-time
-        hint:
-          type: string
     Error:
       type: object
       required:
@@ -413,6 +438,27 @@ components:
           type: integer
           minimum: 0
       additionalProperties: true
+    UpdateTempResult:
+      type: object
+      required:
+      - tempId
+      - versionId
+      - canonicalUrl
+      - expiresAt
+      - spaMode
+      properties:
+        tempId:
+          type: string
+        versionId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        spaMode:
+          type: boolean
     PublishSessionFile:
       type: object
       required:
@@ -449,15 +495,51 @@ components:
           type: object
           additionalProperties:
             type: string
-    UpdateTempResult:
+    CreateTempResult:
       type: object
       required:
       - tempId
+      - canonicalUrl
+      - updateToken
+      - claimToken
+      - claimLink
+      - expiresAt
+      - hint
+      properties:
+        tempId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        updateToken:
+          type: string
+          writeOnly: true
+        claimToken:
+          type: string
+          writeOnly: true
+        claimLink:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        hint:
+          type: string
+    FinalizeResult:
+      type: object
+      required:
+      - success
+      - sessionId
+      - tempId
       - versionId
       - canonicalUrl
+      - status
       - expiresAt
-      - spaMode
       properties:
+        success:
+          const: true
+        sessionId:
+          type: string
         tempId:
           type: string
         versionId:
@@ -465,61 +547,27 @@ components:
         canonicalUrl:
           type: string
           format: uri
+        status:
+          const: ready
         expiresAt:
-          type: string
+          type:
+          - string
+          - 'null'
           format: date-time
-        spaMode:
-          type: boolean
-    CreatePublishSessionInput:
-      type: object
-      required:
-      - files
-      properties:
-        files:
-          type: array
-          minItems: 1
-          maxItems: 100
-          items:
-            $ref: '#/components/schemas/UploadManifestFile'
-        tempId:
+        ownershipState:
+          enum:
+          - anonymous
+          - claimed
+        updateToken:
           type: string
-        title:
+          writeOnly: true
+        claimToken:
           type: string
-          maxLength: 120
-        spaMode:
-          type: boolean
-      additionalProperties: false
-    UploadManifestFile:
-      type: object
-      required:
-      - path
-      - size
-      - contentType
-      - hash
-      properties:
-        path:
+          writeOnly: true
+        claimLink:
           type: string
-          minLength: 1
-          maxLength: 512
-        size:
-          type: integer
-          minimum: 0
-          maximum: 10485760
-        contentType:
-          type: string
-          minLength: 1
-          maxLength: 255
-        hash:
-          type: string
-          pattern: ^[a-f0-9]{64}$
-      additionalProperties: false
+          format: uri
   parameters:
-    TempId:
-      name: tempId
-      in: path
-      required: true
-      schema:
-        type: string
     ClientIdentity:
       name: X-Tempmd-Client
       in: header
@@ -535,60 +583,12 @@ components:
       required: true
       schema:
         type: string
-  responses:
-    TooLarge:
-      description: Request or bundle exceeds an enforced limit
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Conflict:
-      description: Request conflicts with current state
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    BadRequest:
-      description: Invalid request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Forbidden:
-      description: Credential lacks access
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    RateLimited:
-      description: Rate limit exceeded
-      headers:
-        Retry-After:
-          schema:
-            type: integer
-            minimum: 0
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Gone:
-      description: Resource expired or recovery window closed
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Unauthorized:
-      description: Authentication required or invalid
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+    TempId:
+      name: tempId
+      in: path
+      required: true
+      schema:
+        type: string
   securitySchemes:
     tempCapability:
       type: http

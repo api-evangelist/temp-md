@@ -54,13 +54,6 @@ paths:
       tags:
       - Publish Grants
 components:
-  responses:
-    Error:
-      description: Structured error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
   schemas:
     CreatePublishGrant:
       type: object
@@ -109,6 +102,13 @@ components:
           type: string
         request_id:
           type: string
+  responses:
+    Error:
+      description: Structured error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   securitySchemes:
     dashboardBearer:
       type: http

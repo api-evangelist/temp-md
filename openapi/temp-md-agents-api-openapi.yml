@@ -67,7 +67,40 @@ paths:
         '415':
           $ref: '#/components/responses/BadRequest'
 components:
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
     JsonRpcRequest:
       type: object
       required:
@@ -92,26 +125,6 @@ components:
           type: object
           additionalProperties: true
       additionalProperties: false
-    Error:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-        request_id:
-          type: string
-        docs_url:
-          type: string
-          format: uri
-        retry_after:
-          type: integer
-          minimum: 0
-      additionalProperties: true
     JsonRpcResponse:
       type: object
       required:
@@ -137,19 +150,6 @@ components:
             message:
               type: string
             data: {}
-  responses:
-    TooLarge:
-      description: Request or bundle exceeds an enforced limit
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    BadRequest:
-      description: Invalid request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
   securitySchemes:
     tempCapability:
       type: http

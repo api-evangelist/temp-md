@@ -75,6 +75,12 @@ paths:
           $ref: '#/components/responses/RateLimited'
 components:
   responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     RateLimited:
       description: Rate limit exceeded
       headers:
@@ -86,20 +92,21 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    TooLarge:
-      description: Request or bundle exceeds an enforced limit
+    SuccessObject:
+      description: Successful response
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
-    BadRequest:
-      description: Invalid request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+            type: object
+            additionalProperties: true
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooLarge:
+      description: Request or bundle exceeds an enforced limit
       content:
         application/json:
           schema:
@@ -110,20 +117,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    SuccessObject:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-            additionalProperties: true
-  parameters:
-    TempId:
-      name: tempId
-      in: path
-      required: true
-      schema:
-        type: string
   schemas:
     Error:
       type: object
@@ -145,6 +138,13 @@ components:
           type: integer
           minimum: 0
       additionalProperties: true
+  parameters:
+    TempId:
+      name: tempId
+      in: path
+      required: true
+      schema:
+        type: string
   securitySchemes:
     tempCapability:
       type: http
