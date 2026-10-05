@@ -1,0 +1,27 @@
+slug: temp-md
+provider: temp.md
+generated_by: planning/capability-mapping/scripts/classify_capabilities.py
+model: claude-opus-5
+frame:
+- Software & Technology
+min_confidence: 0.7
+capability_model:
+  source: https://github.com/vincentmakes/turbo-ea-capabilities
+  license: CC-BY-4.0
+  attribution: Turbo EA Capabilities by Vincent Verdet — Turbo EA, https://github.com/vincentmakes/turbo-ea-capabilities,
+    CC BY 4.0
+  notice: NOTICE
+edge_count: 1
+edges:
+- tag: Applications
+  spec_file: temp-md-applications-api-openapi.yml
+  capability_id: BC-4270
+  capability_id_l1: BC-4270
+  capability_name: Developer Platform & API Ecosystem Management
+  confidence: 0.7
+  evidence: createApplicationKey 'Create a one-time-reveal Application key'; revokeApplicationKey; createWebhookEndpoint
+    'Create a signed webhook endpoint'; listWebhookDeliveries
+  reason: Partner application registration with API key issuance/revocation, signed webhook endpoints
+    and custom domain bindings — classic developer-platform/API-ecosystem administration. No L2 chosen
+    because the surface spans credential management (.40), webhook subscriptions (.80) and partner apps
+    (.60).
