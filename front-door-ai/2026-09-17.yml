@@ -1,0 +1,31 @@
+# Front Door AI Index — temp-md — 2026-09-17
+# AI vocabulary counted on the provider's root page. Generated; do not edit.
+# `score` is null unless ownership is `own` — see front_door_ai.py.
+front_door_ai:
+  slug: temp-md
+  lexicon_version: '1.0'
+  probed_at: '2026-09-25'
+  host: temp.md
+  final_host: temp.md
+  ownership: own
+  owner: temp-md
+  shares_host_with: null
+  inherited_from: null
+  alias_of: null
+  verdict: scored
+  score: 14
+  band: 5
+  band_label: prominent
+  host_score: 14
+  density: 23.97
+  words: 584
+  tiers:
+    agentic: 7
+    core: 7
+    model: 0
+  ambiguous: 13
+  top_terms:
+    agent: 13
+    AI: 7
+    AI agent: 5
+    prompts: 2
