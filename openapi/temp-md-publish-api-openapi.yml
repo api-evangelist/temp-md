@@ -270,26 +270,20 @@ paths:
           $ref: '#/components/responses/BadRequest'
 components:
   responses:
-    Gone:
-      description: Resource expired or recovery window closed
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Conflict:
-      description: Request conflicts with current state
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    NotFound:
-      description: Resource not found
+    Forbidden:
+      description: Credential lacks access
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     BadRequest:
       description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Gone:
+      description: Resource expired or recovery window closed
       content:
         application/json:
           schema:
@@ -317,13 +311,60 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    Forbidden:
-      description: Credential lacks access
+    Conflict:
+      description: Request conflicts with current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+        docs_url:
+          type: string
+          format: uri
+        retry_after:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    UpdateTempResult:
+      type: object
+      required:
+      - tempId
+      - versionId
+      - canonicalUrl
+      - expiresAt
+      - spaMode
+      properties:
+        tempId:
+          type: string
+        versionId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        spaMode:
+          type: boolean
     CreatePublishSessionInput:
       type: object
       required:
@@ -367,6 +408,48 @@ components:
           type: string
           pattern: ^[a-f0-9]{64}$
       additionalProperties: false
+    FinalizeResult:
+      type: object
+      required:
+      - success
+      - sessionId
+      - tempId
+      - versionId
+      - canonicalUrl
+      - status
+      - expiresAt
+      properties:
+        success:
+          const: true
+        sessionId:
+          type: string
+        tempId:
+          type: string
+        versionId:
+          type: string
+        canonicalUrl:
+          type: string
+          format: uri
+        status:
+          const: ready
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        ownershipState:
+          enum:
+          - anonymous
+          - claimed
+        updateToken:
+          type: string
+          writeOnly: true
+        claimToken:
+          type: string
+          writeOnly: true
+        claimLink:
+          type: string
+          format: uri
     PublishSession:
       type: object
       required:
@@ -418,47 +501,36 @@ components:
         expiresAt:
           type: string
           format: date-time
-    Error:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: string
-        code:
-          type: string
-        message:
-          type: string
-        request_id:
-          type: string
-        docs_url:
-          type: string
-          format: uri
-        retry_after:
-          type: integer
-          minimum: 0
-      additionalProperties: true
-    UpdateTempResult:
+    CreateTempResult:
       type: object
       required:
       - tempId
-      - versionId
       - canonicalUrl
+      - updateToken
+      - claimToken
+      - claimLink
       - expiresAt
-      - spaMode
+      - hint
       properties:
         tempId:
           type: string
-        versionId:
-          type: string
         canonicalUrl:
+          type: string
+          format: uri
+        updateToken:
+          type: string
+          writeOnly: true
+        claimToken:
+          type: string
+          writeOnly: true
+        claimLink:
           type: string
           format: uri
         expiresAt:
           type: string
           format: date-time
-        spaMode:
-          type: boolean
+        hint:
+          type: string
     PublishSessionFile:
       type: object
       required:
@@ -495,78 +567,6 @@ components:
           type: object
           additionalProperties:
             type: string
-    CreateTempResult:
-      type: object
-      required:
-      - tempId
-      - canonicalUrl
-      - updateToken
-      - claimToken
-      - claimLink
-      - expiresAt
-      - hint
-      properties:
-        tempId:
-          type: string
-        canonicalUrl:
-          type: string
-          format: uri
-        updateToken:
-          type: string
-          writeOnly: true
-        claimToken:
-          type: string
-          writeOnly: true
-        claimLink:
-          type: string
-          format: uri
-        expiresAt:
-          type: string
-          format: date-time
-        hint:
-          type: string
-    FinalizeResult:
-      type: object
-      required:
-      - success
-      - sessionId
-      - tempId
-      - versionId
-      - canonicalUrl
-      - status
-      - expiresAt
-      properties:
-        success:
-          const: true
-        sessionId:
-          type: string
-        tempId:
-          type: string
-        versionId:
-          type: string
-        canonicalUrl:
-          type: string
-          format: uri
-        status:
-          const: ready
-        expiresAt:
-          type:
-          - string
-          - 'null'
-          format: date-time
-        ownershipState:
-          enum:
-          - anonymous
-          - claimed
-        updateToken:
-          type: string
-          writeOnly: true
-        claimToken:
-          type: string
-          writeOnly: true
-        claimLink:
-          type: string
-          format: uri
   parameters:
     ClientIdentity:
       name: X-Tempmd-Client
@@ -577,14 +577,14 @@ components:
         type: string
         maxLength: 80
         pattern: ^[A-Za-z0-9][A-Za-z0-9._+/@-]{0,79}$
-    SessionId:
-      name: sessionId
+    TempId:
+      name: tempId
       in: path
       required: true
       schema:
         type: string
-    TempId:
-      name: tempId
+    SessionId:
+      name: sessionId
       in: path
       required: true
       schema:

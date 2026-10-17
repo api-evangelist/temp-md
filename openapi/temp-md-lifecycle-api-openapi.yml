@@ -156,8 +156,32 @@ paths:
           $ref: '#/components/responses/Forbidden'
 components:
   responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Credential lacks access
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     BadRequest:
       description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Gone:
+      description: Resource expired or recovery window closed
       content:
         application/json:
           schema:
@@ -180,30 +204,6 @@ components:
           schema:
             type: object
             additionalProperties: true
-    Gone:
-      description: Resource expired or recovery window closed
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Unauthorized:
-      description: Authentication required or invalid
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Forbidden:
-      description: Credential lacks access
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       type: object
@@ -252,13 +252,6 @@ components:
         message:
           type: string
       additionalProperties: false
-    LifecycleStatus:
-      type: string
-      enum:
-      - drafting
-      - active
-      - cooling
-      - expired
     TempStatus:
       type: object
       required:
@@ -324,6 +317,13 @@ components:
           type:
           - boolean
           - 'null'
+    LifecycleStatus:
+      type: string
+      enum:
+      - drafting
+      - active
+      - cooling
+      - expired
   parameters:
     ClientIdentity:
       name: X-Tempmd-Client

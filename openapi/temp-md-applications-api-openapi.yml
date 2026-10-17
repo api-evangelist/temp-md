@@ -247,13 +247,6 @@ paths:
       tags:
       - Applications
 components:
-  parameters:
-    ApplicationId:
-      name: applicationId
-      in: path
-      required: true
-      schema:
-        type: string
   responses:
     Error:
       description: Structured error
@@ -261,6 +254,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+  parameters:
+    ApplicationId:
+      name: applicationId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     Error:
       type: object
