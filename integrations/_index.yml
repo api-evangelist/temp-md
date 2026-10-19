@@ -22,3 +22,99 @@
     detected: '2026-10-15'
   status: not-a-workflow
   arazzo: null
+- slug: temp-md-a2a-protocol-own-agent-card
+  label: A2A protocol (own Agent Card)
+  partner_name: A2A protocol (own Agent Card)
+  category: A2A agent
+  type: register
+  channel: provider-built
+  evidence: https://temp.md/.well-known/agent-card.json
+  source: edge
+  relationship: compatible
+  contract_reference:
+    register: provider's own /.well-known/agent-card.json
+    spec_file: null
+    standard: A2A
+    role: a2a-agent-card
+    registered_name: temp.md Publisher
+    organization: temp.md
+    matched_domain: temp.md
+    matched_by: own-domain
+    detected_by: sweep-ai-agents.py
+    detected: '2026-10-15'
+  status: not-a-workflow
+  arazzo: null
+- slug: temp-md-a2aregistry-org
+  label: a2aregistry.org
+  partner_name: a2aregistry.org
+  category: A2A agent registry
+  type: register
+  channel: standard-directory
+  evidence: https://a2aregistry.org/api/agents/05c574bb-74b9-4093-ad6b-a4fc7043d3d9
+  source: edge
+  relationship: compatible
+  contract_reference:
+    register: a2aregistry.org /api/agents
+    spec_file: null
+    standard: A2A
+    role: a2a-registry-listing
+    registered_name: temp.md
+    matched_domain: temp.md
+    matched_by: domain
+    matched_via: card-host
+    listings_context: 1
+    sample_agents:
+    - temp.md Publisher
+    detected_by: sweep-ai-agents.py
+    detected: '2026-10-15'
+  status: not-a-workflow
+  arazzo: null
+- slug: temp-md-npm-registry
+  label: npm registry
+  partner: npm
+  partner_name: npm registry
+  category: official SDK (JavaScript/TypeScript)
+  type: register
+  channel: package-registry
+  evidence: https://www.npmjs.com/package/@tempmd/cli
+  source: edge
+  relationship: distribution-channel
+  contract_reference:
+    register: npm registry (public registry JSON)
+    spec_file: null
+    language: JavaScript/TypeScript
+    packages:
+    - name: '@tempmd/cli'
+      version: 0.4.2
+      released: '2026-08-27'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/@tempmd/cli
+      repo_leg: domain:temp.md
+      publisher_leg: org:tempmd
+      matched_by: domain
+    - name: '@tempmd/client'
+      version: 0.2.0
+      released: '2026-09-06'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/@tempmd/client
+      repo_leg: domain:temp.md
+      publisher_leg: org:tempmd
+      matched_by: domain
+    - name: '@tempmd/platform'
+      version: 0.2.0
+      released: '2026-09-06'
+      released_field: modified
+      lapsed: false
+      page: https://www.npmjs.com/package/@tempmd/platform
+      repo_leg: domain:temp.md
+      publisher_leg: org:tempmd
+      matched_by: domain
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  status: not-a-workflow
+  arazzo: null
