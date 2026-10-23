@@ -395,3 +395,9 @@ components:
 externalDocs:
   description: temp.md documentation
   url: https://temp.md/docs
+x-provenance:
+  method: harvested
+  publisher: temp.md
+  source: https://temp.md/openapi.json
+  note: split by refine-openapis from the provider's own published document, verified by fetch (openapi/_original/*.fetch.json);
+    stamped by stamp-openapi-provenance.py (roadmap#793)
